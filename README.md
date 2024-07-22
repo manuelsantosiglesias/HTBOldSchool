@@ -1,8 +1,7 @@
 # HTBOldSchool
 HTB Old Machines - OffSeasson
 
-
-Máquinas antiguas de HTB
+EASY MACHINES
 
 [GreenHorn](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/GreenHorn) - Easy
 
