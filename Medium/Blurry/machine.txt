@@ -1,0 +1,106 @@
+Medium -- Blurry
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.4p1 Debian 5+deb11u3 (protocol 2.0)
+| ssh-hostkey: 
+|   3072 3e:21:d5:dc:2e:61:eb:8f:a6:3b:24:2a:b7:1c:05:d3 (RSA)
+|   256 39:11:42:3f:0c:25:00:08:d7:2f:1b:51:e0:43:9d:85 (ECDSA)
+|_  256 b0:6f:a0:0a:9e:df:b1:7a:49:78:86:b2:35:40:ec:95 (ED25519)
+80/tcp open  http    nginx 1.18.0
+|_http-server-header: nginx/1.18.0
+|_http-title: Did not follow redirect to http://app.blurry.htb/
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+
+el puerto 80 nos suelta ya un subdominio, app.blurry.htb
+
+no encontramos nada en blurry.htb, seguimos con app.blurry.htb
+gobuster dir -u http://app.blurry.htb -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -t 200 --exclude-length=13327 2>/dev/null
+
+Starting gobuster in directory enumeration mode
+===============================================================
+/assets               (Status: 301) [Size: 169] [--> http://app.blurry.htb/assets/]
+/app                  (Status: 301) [Size: 169] [--> http://app.blurry.htb/app/]
+/api                  (Status: 400) [Size: 283]
+/widgets              (Status: 301) [Size: 169] [--> http://app.blurry.htb/widgets/]
+/apis                 (Status: 400) [Size: 284]
+/apidocs              (Status: 400) [Size: 287]
+/apilist              (Status: 400) [Size: 287]
+/apiviewer            (Status: 400) [Size: 289]
+/apiguide             (Status: 400) [Size: 288]
+/apig                 (Status: 400) [Size: 284]
+
+===============================================================
+Finished
+===============================================================
+
+abrimos mientras la web y se trata de un ClearML, tambien tenemos la página login
+
+si le damos a start nos lleva a 
+http://app.blurry.htb/dashboard
+
+
+buscamos subdominios que existan
+
+mientras encontramos un cve posible
+https://github.com/OxyDeV2/ClearML-CVE-2024-24590
+
+el escaner de rutas no nos encontró varios path al no estar logeado
+
+wfuzz -c -z file,/usr/share/SecLists/Discovery/DNS/n0kovo_subdomains_medium.txt --hh=169 -t 200 -H "HOST: FUZZ.blurry.htb" http://blurry.htb
+
+ya nos aparecen otros subdominios app,chat,files,api en 400, añadimos todo
+
+files ya nos suelta un ok, chat carga un rocket.chat
+
+https://nvd.nist.gov/vuln/detail/CVE-2022-44567
+
+pero parece un xss con videollamada, por lo cual va a ser dificil
+
+Después de investigar bastante parece que para explotar la vulnerabilidad de clearml, necesitamos arrancar el cliente con python y conectarnos con las credenciales que generamos
+
+pip install clearml
+clearml-init
+
+y pegamos las credenciales que generamos en la web, con eso ya podremos intentar subir el exploit
+
+https://github.com/xffsec/CVE-2024-24590-ClearML-RCE-Exploit
+
+usamos este exploit
+
+como ya iniciamos la configuración, solo selecionamos el exploit, y si ponemos nosotros el nc a escuchar seleccionamos n
+
+cuando acabe la tarea se está ejecutando esperamos un poco
+
+pip install clearml-agent
+
+probamos a lanzar con el agent
+
+tras reiniciar la máquina, y arrancar 2 veces el cve conseguimos entrar
+
+Ahora sencillamente entramos en .ssh y copiamos el id_rsa
+
+conectamos con ssh con la clave
+
+ssh -i id_rsa jippity@10.129.x.x
+
+conseguimos la userflag
+
+-----------
+
+sudo -l
+
+User jippity may run the following commands on blurry:
+    (root) NOPASSWD: /usr/bin/evaluate_model /models/*.pth
+
+El último paso es un poco más complicado, básicamente es crear un archivo pth, que son archivos de pytorch
+por lo que tendremos que hacer un script que tenga nuestro payload y compilarlo para ejecutarlo con evaluate_model
+
+esta linea nos crea el archivo
+torch.save(model.state_dict(), "model.pth")
+
+por último moverlo a /models
+
+aquí necesité ayuda y hay varias formas, lo mejor es ver los ejemplos
+
+una vez realizado, ya podemos acceder como admin
