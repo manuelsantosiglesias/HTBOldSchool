@@ -10,3 +10,7 @@ Es fácil acceder a la máquina y llegar a user, pero tiene cosillas el consegui
 [BoardLigth](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/BoardLigth) - Easy
 
 En sencilla en general, solo hay que buscar los CVE para aprovechar las vulnerabilidades.
+
+[Usage](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Usage) - Easy
+
+No es dífil pero se hace larga, se usa el sqlmap lo cual alarga el pentesting, y luego la escalada de privilegios a admin lleva algo de investigación. No es díficil pero lleva tiempo
