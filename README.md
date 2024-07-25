@@ -1,7 +1,7 @@
 # HTBOldSchool
 HTB Old Machines - OffSeasson
 
-EASY MACHINES
+## EASY MACHINES
 
 [GreenHorn](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Easy/GreenHorn) - Easy
 
@@ -13,12 +13,21 @@ En sencilla en general, solo hay que buscar los CVE para aprovechar las vulnerab
 
 [Usage](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Easy/Usage) - Easy
 
-No es dífil pero se hace larga, se usa el sqlmap lo cual alarga el pentesting, y luego la escalada de privilegios a admin lleva algo de investigación. No es díficil pero lleva tiempo
+No es díficil pero se hace larga, se usa el sqlmap lo cual alarga el pentesting, y luego la escalada de privilegios a admin lleva algo de investigación. No es díficil pero lleva tiempo
 
 
-MEDIUM MACHINES
+## MEDIUM MACHINES
 
 [Blurry](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/Blurry) - Medium
 
 La máquina tiene miga, hay que manejarse con software que no se conoce y requiere conocimientos de programación bajo mi punto de vista.
 Es cierto que el acceso a user se facilita con el CVE y es sencillo, pero luego la escalada de privilegios parece más complicada
+
+[WifineticTwo](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/WifineticTwo) - Medium
+
+La máquina tiene migilla al configurar el segundo route para poder entrar, pero en general es divertida
+
+[SolarLab](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/SolarLab) - Medium
+
+Se complica un poco la parte de acceder a root, se hace algo larga y hay que usar varios cve más que buscar credenciales. No es demasiado díficil,
+pero si larga
