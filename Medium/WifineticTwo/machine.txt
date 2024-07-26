@@ -12,7 +12,7 @@ PORT     STATE SERVICE    VERSION
 |_  256 18:cd:9d:08:a6:21:a8:b8:b6:f7:9f:8d:40:51:54:fb (ED25519)
 8080/tcp open  http-proxy Werkzeug/1.0.1 Python/2.7.18
 | http-title: Site doesn't have a title (text/html; charset=utf-8).
-|_Requested resource was http://10.129.211.160:8080/login
+|_Requested resource was http://10.129.x.x:8080/login
 |_http-server-header: Werkzeug/1.0.1 Python/2.7.18
 | fingerprint-strings: 
 |   FourOhFourRequest: 
