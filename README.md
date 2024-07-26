@@ -31,3 +31,13 @@ La máquina tiene migilla al configurar el segundo route para poder entrar, pero
 
 Se complica un poco la parte de acceder a root, se hace algo larga y hay que usar varios cve más que buscar credenciales. No es demasiado díficil,
 pero si larga
+
+
+## HARD MACHINES
+
+[Freelancer](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Hard/Freelancer) - Hard
+
+Máquina complicadísima, si bien la bandera de user es más o menos normal, luego hay que hacer de todo, necesité bastante ayuda después de la
+flag de user.
+
+Hay unos scripts para el archivo final de ccache, pero no era necesario, con el export se arreglaba

