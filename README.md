@@ -32,6 +32,9 @@ La máquina tiene migilla al configurar el segundo route para poder entrar, pero
 Se complica un poco la parte de acceder a root, se hace algo larga y hay que usar varios cve más que buscar credenciales. No es demasiado díficil,
 pero si larga
 
+[Runner](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/Runner) - Medium
+
+Fue fácil la verdad, más que otras del mismo nivel, si es cierto que hay que buscar un poco y trastear con las aplicaciones que se encuentran
 
 ## HARD MACHINES
 
