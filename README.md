@@ -36,6 +36,10 @@ pero si larga
 
 Fue fácil la verdad, más que otras del mismo nivel, si es cierto que hay que buscar un poco y trastear con las aplicaciones que se encuentran
 
+[Runner](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/Cascade) - Medium
+
+Sencilla, tiene cosas simples de AD
+
 ## HARD MACHINES
 
 [Freelancer](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Hard/Freelancer) - Hard
