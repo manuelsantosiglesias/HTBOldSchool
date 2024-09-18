@@ -1,0 +1,28 @@
+Pennyworth Very easy
+
+máquina sencilla
+
+con nmap vemos que tenemos un jenkins corriendo en el puerto 8080
+
+nos conectamos probamos passwords
+
+nos da root:password
+
+una vez dentro trasteamos vemos que usa groovy para ejecutar scripts
+
+y aquí podemos lanzar una tarea y ejecutar un comando para obtener la revshell
+
+o podemos usar la ruta
+
+http://pennyworth.htb:8080/script
+
+https://dzmitry-savitski.github.io/2018/03/groovy-reverse-and-bind-shell
+y ejecutar este script que es lo mismo
+
+def sout = new StringBuilder(), serr = new StringBuilder()
+def proc = 'cat /root/flag.txt'.execute()
+proc.consumeProcessOutput(sout, serr)
+proc.waitForOrKill(1000)
+println "out> $sout err> $serr"
+
+y con esto ya tenemos la flag o la revshell
