@@ -1,6 +1,20 @@
 # HTBOldSchool
 HTB Old Machines - OffSeasson
 
+## VERY EASY / INITIAL MACHINES
+
+[Ignition](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Very%20Easy/Ignition) - Very Easy
+
+[Bike](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Very%20Easy/Bike) - Very Easy
+
+[Funnel](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Very%20Easy/Funnel) - Very Easy
+
+[Responder](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Very%20Easy/Responder) - Very Easy
+
+[Three](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Very%20Easy/Three) - Very Easy
+
+
+
 ## EASY MACHINES
 
 [GreenHorn](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Easy/GreenHorn) - Easy
@@ -36,9 +50,13 @@ pero si larga
 
 Fue fácil la verdad, más que otras del mismo nivel, si es cierto que hay que buscar un poco y trastear con las aplicaciones que se encuentran
 
-[Runner](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/Cascade) - Medium
+[Cascade](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/Cascade) - Medium
 
 Sencilla, tiene cosas simples de AD
+
+[Compiled](https://github.com/manuelsantosiglesias/HTBOldSchool/tree/main/Medium/Compiled) - Medium
+
+Tiene una parte interesante de compilar tu propio exploit
 
 ## HARD MACHINES
 
