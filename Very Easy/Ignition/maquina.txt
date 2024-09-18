@@ -1,0 +1,21 @@
+Ignition very eaasy
+
+solo encontramos una web en el puerto 80
+
+pasamos el gobuster para encontrar subdirectorios
+
+===============================================================
+Starting gobuster in directory enumeration mode
+===============================================================
+/media                (Status: 301) [Size: 185] [--> http://ignition.htb/media/]
+/static               (Status: 301) [Size: 185] [--> http://ignition.htb/static/]
+/0                    (Status: 200) [Size: 25803]
+/setup                (Status: 301) [Size: 185] [--> http://ignition.htb/setup/]
+/Home                 (Status: 301) [Size: 0] [--> http://ignition.htb/home]
+/errors               (Status: 301) [Size: 185] [--> http://ignition.htb/errors/]
+
+en /admin
+
+probamos admin y qwerty123 como password y entramos
+
+Y al entrar en la web ya nos aparece la flag
